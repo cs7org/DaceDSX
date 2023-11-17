@@ -19,37 +19,29 @@
 1.	Make sure to compile the JavaBaseWrapper and SimService (just run “mvn install” in that folder)
 2.	Make sure a config.properties is next to the SimService-0.1-jar-with-dependencies.jar and SendScenarioObject.jar
 3.	Open Docker and run Kafka:
-
-    a.	docker-compose up -d
-    b.	docker-compose ps
-
+ * docker-compose up -d
+ * docker-compose ps
 4.	Run the SimService:
-
-    a.	(sudo) java -jar ./path_to/SimService-0.1-jar-with-dependencies.jar
+* (sudo) java -jar ./path_to/SimService-0.1-jar-with-dependencies.jar
 5.	Run the SendScenarioObject with your scenario file as input
-
-    a.	(sudo) java -jar ./path_to/SendScenarioObject.jar ./path_to_scenario/scenario_file.json
+* (sudo) java -jar ./path_to/SendScenarioObject.jar ./path_to_scenario/scenario_file.json
 
 ## What to do to compile the SumoWrapper:
 1.	Install sumo
-
-    a.	https://sumo.dlr.de/docs/Installing/
-    b.	https://sumo.dlr.de/docs/Installing/Linux_Build.html
+* https://sumo.dlr.de/docs/Installing/
+* https://sumo.dlr.de/docs/Installing/Linux_Build.html
 2.	Install missing libraries
-      
-    a.	libserdes++
-    b.	libavrocpp,
-    c.	librdkafka
-    d.	libcppkafka
-    e.	pugixml
+* (libserdes++)
+* libavrocpp,
+* librdkafka
+* (libcppkafka)
+* pugixml
 3.	Compile CppBaseWrapper
-      
-    a.	mkdir build
-    b.	cd build
-    c.	cmake ..
-    d.	make
+* mkdir build
+* cd build
+* cmake ..
+* make
 4.	Compile SumoWrapper
-      
-    a.	Adjust Makefile
-    b.	Run make
+* Adjust Makefile
+* Run make
 5.	Make sure the paths in `_data\executables\SumoWrapper\run.sh` are correct before running a scenario

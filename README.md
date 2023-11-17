@@ -21,10 +21,9 @@
 3.	Open Docker and run Kafka:
  * docker-compose up -d
  * docker-compose ps
-4. Make sure the config.propertiesfile is next to the jar files
-5.	Run the SimService:
+4.	Run the SimService:
 * (sudo) java -jar ./path_to/SimService-0.1-jar-with-dependencies.jar
-6.	Run the SendScenarioObject with your scenario file as input
+5.	Run the SendScenarioObject with your scenario file as input
 * (sudo) java -jar ./path_to/SendScenarioObject.jar ./path_to_scenario/scenario_file.json
 
 ## What to do to compile the SumoWrapper:

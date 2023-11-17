@@ -81,7 +81,7 @@ public class SimulationService
 
 		String timestamp = Long.toString((new Date()).getTime());
 		Properties sceProperties =  Config.getProperties("sce"+timestamp, true);
-		System.out.println("\nsceProperties \n"+sceProperties+"\n");
+		// System.out.println("\nsceProperties \n"+sceProperties+"\n");
 		sceProperties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
 		scenarioConsumer = new KafkaConsumer<String, Scenario>(sceProperties);  
 

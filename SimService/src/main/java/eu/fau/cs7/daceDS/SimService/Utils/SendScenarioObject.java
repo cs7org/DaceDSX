@@ -242,7 +242,7 @@ public class SendScenarioObject
 
 					kafkaResourceFileWriter.publish(resourceTopic, resourceFileInput,0);
 					logger.info("Published resource: "+ID +" as "+ type+" on "+resourceTopic);
- 					logger.info("Published resource: "+resourceFileInput);
+//  					logger.info("Published resource: "+resourceFileInput);
 				}
 			}
 			//same for translator resources

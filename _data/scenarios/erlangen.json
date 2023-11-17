@@ -1,0 +1,34 @@
+{
+  "scenarioID": "erlangen",
+  "domainReferences": {
+    "traffic": "erlangen.net.xml"
+  },
+  "simulationStart": 0,
+  "simulationEnd": 1000,
+  "execution": {
+    "randomSeed": 23,
+    "constraints": "",
+    "priority": 0,
+    "syncedParticipants": 2
+  },
+  "buildingBlocks": [
+    {
+      "instanceID": "SumoWrapper0",
+      "type": "SumoWrapper",
+      "layer": "micro",
+      "domain": "traffic",
+      "stepLength": 1000,
+      "parameters": {},
+      "resources": {
+        "erlangen.net.xml": "RoadMap","erlangen.rou.xml": "Traffic"
+      },
+      "results": {},
+      "synchronized": true,
+      "isExternal": false,
+      "responsibilities": [],
+      "observers": []
+    }
+  ],
+  "translators": [],
+  "projectors": []
+}

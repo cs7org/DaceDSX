@@ -1,0 +1,22 @@
+{
+   "namespace": "eu.fau.cs7.daceDS.datamodel",
+   "type": "record",
+   "name": "SubMicro",
+   "fields": [
+      {"name": "vehicleID", "type": "string"},
+      {"name": "acceleration", "type": "eu.fau.cs7.daceDS.datamodel.Vec3"},
+      {"name": "position", "type": "eu.fau.cs7.daceDS.datamodel.Vec3"},
+      {"name": "rotation", "type": "eu.fau.cs7.daceDS.datamodel.Vec3"},
+      {"name": "road", "type": "long"},
+      {"name": "lane", "type": "int"},
+      {"name": "route", "type":["eu.fau.cs7.daceDS.datamodel.Waypoint"]},
+      {"name": "sensor", "type": ["eu.fau.cs7.daceDS.datamodel.Sensor"]},
+      {"name": "type", "type": "string"},
+      {"name": "velocity", "type": "eu.fau.cs7.daceDS.datamodel.Vec3"},
+      {"name": "speed", "type": "double"},
+      {"name": "throttle", "type": "double"},
+      {"name": "steer", "type": "double"},
+      {"name": "brake", "type": "double"},
+      {"name": "gear", "type": "double"}
+   ]
+}

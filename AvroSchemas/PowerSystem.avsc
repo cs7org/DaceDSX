@@ -1,0 +1,12 @@
+{
+   "namespace": "eu.fau.cs7.daceDS.datamodel",
+   "type": "record",
+   "name": "PowerSystem",
+   "fields": [
+      {"name": "buses", "type": ["string"] },
+      {"name": "generators", "type": ["string"]},
+      {"name": "loads", "type": ["string"]},
+      {"name": "lines", "type": {"type":"string","value":"string"}},
+      {"name": "transformers", "type":["string"] }
+   ]
+}

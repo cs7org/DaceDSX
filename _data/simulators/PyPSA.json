@@ -1,0 +1,13 @@
+{
+    "name": "PyPSAWrapper",
+    "domain": "energy",
+    "layer": "network",
+    "version": 1,
+    "results": [],
+    "resourceTypes" : [
+        "network"
+    ]    ,
+    "availableStepsizes" : [1,10,100,1000],
+    "continous" : false,
+    "enabled" : true
+}

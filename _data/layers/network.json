@@ -1,0 +1,36 @@
+{
+    "name": "network",
+    "domain": "energy",
+    "version": 1,
+    "ndm": {
+        "name": "bus",
+        "isPersistent": false,
+        "isGettable": true,
+        "isSettable": true,
+        "isObservable": true,
+        "compounds": [],
+        "key": {
+            "name": "busID",
+            "type": "string",
+            "isGettable": false,
+            "isSettable": false,
+            "isObservable": false
+        },
+        "methods": [],
+        "primitives": [
+            {
+                "name": "carrier",
+                "type": "string",
+                "isGettable": true,
+                "isSettable": false,
+                "isObservable": false
+            }
+        ]
+    },
+    "compounds": [
+    ],
+    "methods": [
+    ],
+    "primitives": [
+    ]
+}

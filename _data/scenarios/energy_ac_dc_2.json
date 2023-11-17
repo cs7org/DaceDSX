@@ -1,0 +1,47 @@
+{
+  "scenarioID": "energy_ac_dc_2",
+  "domainReferences": {
+  },
+  "simulationStart": 0,
+  "simulationEnd": 10,
+  "execution": {
+    "randomSeed": 23,
+    "constraints": "",
+    "priority": 0,
+    "syncedParticipants": 2
+  },
+  "buildingBlocks": [
+    {
+      "instanceID": "PyPSAWrapper0",
+      "type": "PyPSAWrapper",
+      "layer": "network",
+      "domain": "energy",
+      "stepLength": 1000,
+      "parameters": {},
+      "resources": {"file:///meshec_ac_dc_example.hdf5": "Network"
+      },
+      "results": {},
+      "synchronized": true,
+      "isExternal": false,
+      "responsibilities": ["London", "Manchester", "Norwich"],
+      "observers": []
+    },
+    {
+      "instanceID": "PyPSAWrapper1",
+      "type": "PyPSAWrapper",
+      "layer": "network",
+      "domain": "energy",
+      "stepLength": 1000,
+      "parameters": {},
+      "resources": {"file:///meshec_ac_dc_example.hdf5": "Network"
+      },
+      "results": {},
+      "synchronized": true,
+      "isExternal": false,
+      "responsibilities": ["Bremen", "Frankfurt"],
+      "observers": []
+    }
+  ],
+  "translators": [],
+  "projectors": []
+}

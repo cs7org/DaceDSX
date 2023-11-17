@@ -1,0 +1,11 @@
+{
+  "resourceList": [
+    {
+      "ID": "network_in_hdf5.hdf5",
+      "Domain": "Energy",
+      "Layer": "Energy",
+      "Type": "Network",
+      "Path": "_data/executables/PyPSAWrapper/network_in_hdf5.hdf5"
+    }
+  ]
+}

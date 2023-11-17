@@ -4,7 +4,7 @@
 
 * [JDK 11](https://jdk.java.net/archive/) 
   * set JAVA_Home
-  * add %JAVA_HOME%\bin ti Path
+  * add %JAVA_HOME%\bin to your Path
 * Install [Maven](https://maven.apache.org/download.cgi) and add it to your Path
 * For Windows Users: Install [WSL](https://learn.microsoft.com/de-de/windows/wsl/install)
 * Install [Docker](https://docs.docker.com/engine/install/)

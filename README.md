@@ -32,10 +32,10 @@
 * https://sumo.dlr.de/docs/Installing/
 * https://sumo.dlr.de/docs/Installing/Linux_Build.html
 2.	Install missing libraries
-* libserdes++
+* (libserdes++)
 * libavrocpp,
 * librdkafka
-* libcppkafka
+* (libcppkafka)
 * pugixml
 3.	Compile CppBaseWrapper
 * mkdir build

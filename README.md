@@ -25,6 +25,7 @@
 ## What to do to run a Scenario in DaceDS:
 1.	Make sure a config.properties is next to the SimService-0.1-jar-with-dependencies.jar and SendScenarioObject.jar
 * `mv ./config.properties ./target/config.properties`
+* adapt the paths in the config.properties file
 2.	Open Docker and run Kafka:
  * docker-compose up -d
  * docker-compose ps

@@ -28,12 +28,12 @@
  * docker-compose up -d
  * docker-compose ps
 3.	Run the SimService:
-* (sudo) java -jar ./path_to/SimService-0.1-jar-with-dependencies.jar
+* (sudo) java -jar ./path_to/SimService/target/SimService-0.1-jar-with-dependencies.jar
 4.	Run the SendScenarioObject with your scenario file as input
-* (sudo) java -jar ./path_to/SendScenarioObject.jar ./path_to_scenario/scenario_file.json
+* (sudo) java -jar ./path_to/SimService/target/SendScenarioObject.jar ./path_to_scenario/scenario_file.json
 
 ## What to do to compile the SumoWrapper:
-1.	Install sumo
+1.	Install sumo (make sure to check out a release-tag from the sumo-git-repo)
 * https://sumo.dlr.de/docs/Installing/
 * https://sumo.dlr.de/docs/Installing/Linux_Build.html
 2.	Install missing libraries

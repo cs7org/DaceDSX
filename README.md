@@ -8,7 +8,9 @@
 * Install [Maven](https://maven.apache.org/download.cgi) and add it to your Path
 * For Windows Users: Install [WSL](https://learn.microsoft.com/de-de/windows/wsl/install)
 * Install [Docker Desktop](https://docs.docker.com/engine/install/)
-* Setup [Confluent](https://docs.confluent.io/platform/current/platform-quickstart.html#qs-prereq) Platform with [Zookeeper](https://github.com/confluentinc/cp-all-in-one/blob/7.5.2-post/cp-all-in-one/docker-compose.yml)
+  * For Windows: Go to settings -> General and enable "Use the WSL 2 based engine"
+  * For Linux: Go to settings -> General and enable "enable 'docker-compose' CLI alias" 
+* Do step 1 of the [Setup Confluent Platform](https://docs.confluent.io/platform/current/platform-quickstart.html#qs-prereq)  using the [Zookeeper-compose file](https://github.com/confluentinc/cp-all-in-one/blob/7.5.2-post/cp-all-in-one/docker-compose.yml) instead of the wget command
 * For Windows Users: If an error occurs during the installation of docker or confluent try:
   * dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
   * wsl --update

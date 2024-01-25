@@ -40,7 +40,7 @@
 * https://sumo.dlr.de/docs/Installing/Linux_Build.html
 2.	Install missing libraries
 * ([libserdes++](https://github.com/confluentinc/libserdes))
-* [libavrocpp](https://github.com/apache/avro/blob/main/lang/c++/README),
+* [libavrocpp](https://github.com/apache/avro/blob/main/lang/c++/README), (make the installation under lang/c++)
 * [librdkafka](https://github.com/confluentinc/librdkafka)
 * ([libcppkafka](https://github.com/mfontanini/cppkafka))
 * [pugixml](https://pugixml.org/docs/quickstart.html)

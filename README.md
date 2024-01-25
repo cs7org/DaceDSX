@@ -2,11 +2,11 @@
 
 ## What to install
 
+* The simulation service is implemented for Linux operating systems, if you want to use it on Windows install [WSL](https://learn.microsoft.com/de-de/windows/wsl/install) and run all the commands in the WSL (open the cmd and write bash to activate WSL)
 * [JDK 11](https://jdk.java.net/archive/) 
   * set JAVA_Home
   * add %JAVA_HOME%\bin to your Path
 * Install [Maven](https://maven.apache.org/download.cgi) and add it to your Path
-* For Windows Users: Install [WSL](https://learn.microsoft.com/de-de/windows/wsl/install)
 * Install [Docker Desktop](https://docs.docker.com/engine/install/)
   * For Windows: Go to settings -> General and enable "Use the WSL 2 based engine"
   * For Linux: Go to settings -> General and enable "enable 'docker-compose' CLI alias" 
@@ -24,6 +24,7 @@
 
 ## What to do to run a Scenario in DaceDS:
 1.	Make sure a config.properties is next to the SimService-0.1-jar-with-dependencies.jar and SendScenarioObject.jar
+* `mv ./config.properties ./target/config.properties`
 2.	Open Docker and run Kafka:
  * docker-compose up -d
  * docker-compose ps

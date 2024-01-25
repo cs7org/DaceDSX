@@ -16,16 +16,20 @@
   * wsl --update
 
 
+## How to compile DaceDS
+1. Download or check-out this repo
+2. Compile the JavaBaseWrapper and SimService (just run “mvn install” in that folder)
+3. Compile (if necessary) the Wrapper-folder, e.g. as shown below for SumoWrapper
+
 
 ## What to do to run a Scenario in DaceDS:
-1.	Make sure to compile the JavaBaseWrapper and SimService (just run “mvn install” in that folder)
-2.	Make sure a config.properties is next to the SimService-0.1-jar-with-dependencies.jar and SendScenarioObject.jar
-3.	Open Docker and run Kafka:
+1.	Make sure a config.properties is next to the SimService-0.1-jar-with-dependencies.jar and SendScenarioObject.jar
+2.	Open Docker and run Kafka:
  * docker-compose up -d
  * docker-compose ps
-4.	Run the SimService:
+3.	Run the SimService:
 * (sudo) java -jar ./path_to/SimService-0.1-jar-with-dependencies.jar
-5.	Run the SendScenarioObject with your scenario file as input
+4.	Run the SendScenarioObject with your scenario file as input
 * (sudo) java -jar ./path_to/SendScenarioObject.jar ./path_to_scenario/scenario_file.json
 
 ## What to do to compile the SumoWrapper:

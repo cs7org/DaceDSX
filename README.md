@@ -10,7 +10,7 @@
 * Install [Docker Desktop](https://docs.docker.com/engine/install/)
   * For Windows: Go to settings -> General and enable "Use the WSL 2 based engine"
   * For Linux: Go to settings -> General and enable "enable 'docker-compose' CLI alias" 
-* Do step 1 of the [Setup Confluent Platform](https://docs.confluent.io/platform/current/platform-quickstart.html#qs-prereq)  using the [Zookeeper-compose file](https://github.com/confluentinc/cp-all-in-one/blob/7.5.2-post/cp-all-in-one/docker-compose.yml) instead of the wget command
+* Do step 1 of the [Setup Confluent Platform](https://docs.confluent.io/platform/current/platform-quickstart.html#qs-prereq)  using the [Zookeeper-compose file](https://github.com/confluentinc/cp-all-in-one/blob/7.5.2-post/cp-all-in-one/docker-compose.yml) instead of the wget command (if an error occurs during compose up -d check if the indentation of the yaml-file is correct)
 * For Windows Users: If an error occurs during the installation of docker or confluent try:
   * dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
   * wsl --update

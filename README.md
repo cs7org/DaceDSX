@@ -38,13 +38,20 @@
 1.	Install sumo (make sure to check out a release-tag from the sumo-git-repo)
 * https://sumo.dlr.de/docs/Installing/
 * https://sumo.dlr.de/docs/Installing/Linux_Build.html
-2.	Install missing libraries
-* ([libserdes++](https://github.com/confluentinc/libserdes))
-* [libavrocpp](https://github.com/apache/avro/blob/main/lang/c++/README), (make the installation under lang/c++)
+* export CMAKE_PREFIX_PATH=path_to_sumo_build/sumo/build:$CMAKE_PREFIX_PATH
+* create an empty config.h file and add it to the build folder in sumo
+2.	Install missing libraries (Preferably in DaceDS folder)
+* [libavrocpp](https://github.com/apache/avro/blob/main/lang/c++/README), (make the installation under lang/c++) also install avro_c the same way
+* [libserdes++](https://github.com/confluentinc/libserdes)
 * [librdkafka](https://github.com/confluentinc/librdkafka)
-* ([libcppkafka](https://github.com/mfontanini/cppkafka))
-* [pugixml](https://pugixml.org/docs/quickstart.html)
-3.	Compile CppBaseWrapper
+* [libcppkafka](https://github.com/mfontanini/cppkafka)
+* [pugixml](https://pugixml.org/docs/quickstart.html) run the following commands after download:
+  * mkdir build
+  * cd build
+  * cmake ..
+  * make -j5
+  * sudo make install 
+3.	Compile CppBaseWrapper (adapt files in CMakeList.txt)
 * mkdir build
 * cd build
 * cmake ..

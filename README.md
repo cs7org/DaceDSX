@@ -18,8 +18,8 @@
 
 ## How to compile DaceDS
 1. Download or check-out this repo
-2. Compile the JavaBaseWrapper and SimService (just run “mvn install” in that folder)
-3. If any error occured with Build, please run mvn install -Dhttps.protocols=TLSv1.2 (based on JDK 11 version)
+2. Compile the JavaBaseWrapper and SimService (just run “mvn install” in that folder, where pom.xml resides)
+3. If any error occured with Build, please run “mvn install -Dhttps.protocols=TLSv1.2” (based on JDK 11 version)
 4. Compile (if necessary) the Wrapper-folder, e.g. as shown below for SumoWrapper
 
 

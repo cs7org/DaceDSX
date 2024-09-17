@@ -121,7 +121,7 @@ public class SendScenarioObject
 		System.out.println("\n\nresourcepath is "+resourcePath);
 		//scenario = RunSimFromFile.parseFile(scepath);
 		scenario = ScenarioUtils.getDemoScenario(args[0]);
-		System.out.println("scenario"+ scenario);
+// 		System.out.println("scenario"+ scenario);
 		if(scenario.getScenarioID().length()==0) {	
 		    Date date = Calendar.getInstance().getTime();  
 		    DateFormat dateFormat = new SimpleDateFormat("MMddhhmmss");  

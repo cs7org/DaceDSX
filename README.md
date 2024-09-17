@@ -44,4 +44,12 @@
 4.	Compile SumoWrapper
 * Adjust Makefile
 * Run make
-5.	Make sure the paths in `_data\executables\SumoWrapper\run.sh` are correct before running a scenario
+5. Install gnome-terminal
+6. Make sure the paths in `_data\executables\SumoWrapper\run.sh` are correct before running a scenario
+
+## What to do to run a PyPSA-scenario:
+
+1. Install Python [(Download Link)](https://www.python.org/downloads/)
+2. Install PyPSA [(Installation Guide)](https://pypsa-eur.readthedocs.io/en/latest/installation.html)
+3. Create a scenario file and place it under _data/scenarios
+4. Run the scenario by following the *"What to do to run a scenario"* instructions

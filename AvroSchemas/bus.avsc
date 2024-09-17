@@ -1,0 +1,13 @@
+{
+   "namespace": "eu.fau.cs7.daceDS.datamodel",
+   "type": "record",
+   "name": "Line",
+   "fields": [
+      {"name": "name", "type": "string" },
+      {"name": "p", "type": "string"},
+      {"name": "q", "type": "string"},
+      {"name": "v_mag_pu", "type": "string"},
+      {"name": "v_ang", "type": "string"}
+
+   ]
+}

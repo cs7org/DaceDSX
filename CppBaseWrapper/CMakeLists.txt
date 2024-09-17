@@ -22,8 +22,8 @@ target_include_directories(CppBaseWrapper PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}             # Current directory
     ${CMAKE_CURRENT_SOURCE_DIR}/src         # Source directory
     ${CMAKE_CURRENT_SOURCE_DIR}/src/datamodel   # Directory containing datamodel headers
-    ${CMAKE_CURRENT_SOURCE_DIR}/../SumoWrapper/librdkafka-master/src-cpp/   # Directory containing datamodel headers
-    ${CMAKE_CURRENT_SOURCE_DIR}/../SumoWrapper/pugixml-1.13/src//   # Directory containing datamodel headers
+    ${CMAKE_CURRENT_SOURCE_DIR}/../librdkafka-master/src-cpp/   # Directory containing datamodel headers
+    ${CMAKE_CURRENT_SOURCE_DIR}/../pugixml-1.13/src//   # Directory containing datamodel headers
     ${CMAKE_CURRENT_SOURCE_DIR}/../SumoWrapper/src
 
 
@@ -36,6 +36,6 @@ target_link_libraries(CppBaseWrapper SUMO::libsumocpp
 )
 
 target_include_directories(CppBaseWrapper PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/../SumoWrapper/sumo-git/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/../SumoWrapper/sumo-git/build/cmake-build/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/../sumo-git/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/../sumo-git/build/cmake-build/src
     )

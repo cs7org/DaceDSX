@@ -51,5 +51,7 @@
 
 1. Install Python [(Download Link)](https://www.python.org/downloads/)
 2. Install PyPSA [(Installation Guide)](https://pypsa-eur.readthedocs.io/en/latest/installation.html)
-3. Create a scenario file and place it under _data/scenarios
-4. Run the scenario by following the *"What to do to run a scenario"* instructions
+3. Install [confluent-kafka](https://pypi.org/project/confluent-kafka/)
+4. Install [avro](https://pypi.org/project/avro/) (Maybe you also have to install [pytables](https://www.pytables.org/usersguide/installation.html))
+5. Create a scenario file and place it under _data/scenarios
+6. Run the scenario by following the *"What to do to run a scenario"* instructions

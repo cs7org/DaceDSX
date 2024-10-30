@@ -22,7 +22,7 @@ target_include_directories(CppBaseWrapper PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}             # Current directory
     ${CMAKE_CURRENT_SOURCE_DIR}/src         # Source directory
     ${CMAKE_CURRENT_SOURCE_DIR}/src/datamodel   # Directory containing datamodel headers
-    ${CMAKE_CURRENT_SOURCE_DIR}/../librdkafka-master/src-cpp/   # Directory containing datamodel headers
+    ${CMAKE_CURRENT_SOURCE_DIR}/../librdkafka/src-cpp/   # Directory containing datamodel headers
     ${CMAKE_CURRENT_SOURCE_DIR}/../pugixml/src//   # Directory containing datamodel headers
     ${CMAKE_CURRENT_SOURCE_DIR}/../SumoWrapper/src
 

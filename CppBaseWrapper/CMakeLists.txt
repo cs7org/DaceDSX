@@ -40,6 +40,6 @@ target_link_libraries(CppBaseWrapper SUMO::libsumocpp
 )
 
 target_include_directories(CppBaseWrapper PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/../SumoWrapper/sumo-git/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/../SumoWrapper/sumo-git/build/cmake-build/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/../sumo-git/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/../sumo-git/build/cmake-build/src
     )

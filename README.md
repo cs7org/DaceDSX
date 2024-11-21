@@ -11,12 +11,13 @@
   * For Windows: Go to settings -> General and enable "Use the WSL 2 based engine"
   * For Linux: Go to settings -> General and enable "enable 'docker-compose' CLI alias" 
 * Do step 1 of the [Setup Confluent Platform](https://docs.confluent.io/platform/current/platform-quickstart.html#qs-prereq)  using the [Zookeeper-compose file](https://github.com/confluentinc/cp-all-in-one/blob/7.5.2-post/cp-all-in-one/docker-compose.yml) instead of the wget command (if an error occurs during compose up -d check if the indentation of the yaml-file is correct)
+* Navigate to Control Center at http://localhost:9021. It may take a minute or two for Control Center to start and load. Click the controlcenter.cluster tile.
 * For Windows Users: If an error occurs during the installation of docker or confluent try:
   * dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
   * wsl --update
 
 
-## How to compile DaceDS4
+## How to compile DaceDS4energy
 1. Download or check-out this repo
 2. Compile the JavaBaseWrapper and SimService (just run “mvn install” in that folder, where pom.xml resides)
 3. If any error occured with Build, please run “mvn install -Dhttps.protocols=TLSv1.2” (based on JDK 11 version)
@@ -43,8 +44,8 @@
 * create an empty config.h file and add it to the build folder in sumo
 * Install SUMOLibraries in the parent directory (/../sumo) using https://github.com/DLR-TS/SUMOLibraries 
 2.	Install missing libraries (Preferably in DaceDS folder)
-* [avro](Check the instructions from https://github.com/apache/avro/blob/main/lang/c++/README). Make the installation for both avro/lang/c++ and avro/lang/c. Make sure to run sudo make install at the end. Check /usr/local/include for avro.h and avro. 
-* [libserdes](https://github.com/confluentinc/libserdes). 
+* [avro] (https://github.com/apache/avro). Check the instructions from https://github.com/apache/avro/blob/main/lang/c++/README. Make the installation for both avro/lang/c++ and avro/lang/c. Make sure to run sudo make install at the end. Check /usr/local/include for avro.h and avro. 
+* [libserdes](https://github.com/confluentinc/libserdes)
 * [librdkafka](https://github.com/confluentinc/librdkafka)
 * [cppkafka](https://github.com/mfontanini/cppkafka)
 * [pugixml](https://github.com/zeux/pugixml)

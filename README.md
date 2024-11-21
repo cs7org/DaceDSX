@@ -2,8 +2,8 @@
 
 ## What to install
 
-* The simulation service is implemented for Linux operating systems, if you want to use it on Windows install [WSL](https://learn.microsoft.com/de-de/windows/wsl/install) and run all the commands in the WSL (open the cmd and write bash to activate WSL)
-* [JDK 11](https://jdk.java.net/archive/) 
+* The simulation service is implemented for Linux operating systems, it is highly recommended to use Linux Ubuntu distribution (22.04). If you want to use it on Windows, please install [WSL](https://learn.microsoft.com/de-de/windows/wsl/install) and run all the commands in the WSL (open the cmd and write bash to activate WSL)
+* [JDK 11](https://jdk.java.net/archive/). 
   * set JAVA_Home
   * add %JAVA_HOME%\bin to your Path
 * Install [Maven](https://maven.apache.org/download.cgi) and add it to your Path
@@ -16,7 +16,7 @@
   * wsl --update
 
 
-## How to compile DaceDS
+## How to compile DaceDS4
 1. Download or check-out this repo
 2. Compile the JavaBaseWrapper and SimService (just run “mvn install” in that folder, where pom.xml resides)
 3. If any error occured with Build, please run “mvn install -Dhttps.protocols=TLSv1.2” (based on JDK 11 version)
@@ -41,22 +41,30 @@
 * https://sumo.dlr.de/docs/Installing/Linux_Build.html
 * export CMAKE_PREFIX_PATH=path_to_sumo_build/sumo/build:$CMAKE_PREFIX_PATH
 * create an empty config.h file and add it to the build folder in sumo
+* Install SUMOLibraries in the parent directory (/../sumo) using https://github.com/DLR-TS/SUMOLibraries 
 2.	Install missing libraries (Preferably in DaceDS folder)
-* [libavrocpp](https://github.com/apache/avro/blob/main/lang/c++/README), (make the installation under lang/c++) also install avro_c the same way
-* [libserdes++](https://github.com/confluentinc/libserdes)
+* [avro](Check the instructions from https://github.com/apache/avro/blob/main/lang/c++/README). Make the installation for both avro/lang/c++ and avro/lang/c. Make sure to run sudo make install at the end. Check /usr/local/include for avro.h and avro. 
+* [libserdes](https://github.com/confluentinc/libserdes). 
 * [librdkafka](https://github.com/confluentinc/librdkafka)
-* [libcppkafka](https://github.com/mfontanini/cppkafka)
-* [pugixml](https://pugixml.org/docs/quickstart.html) run the following commands after download:
+* [cppkafka](https://github.com/mfontanini/cppkafka)
+* [pugixml](https://github.com/zeux/pugixml)
+* Run the following commands for building cppkafka and pugixml libraries:
   * mkdir build
   * cd build
   * cmake ..
   * make -j5
-  * sudo make install 
+  * sudo make install
+* Run the following commands for building librdkafka and libserdes libraries:
+  * ./configure
+  * make -j5
+  * sudo make install
+ 
 3.	Compile CppBaseWrapper (adapt files in CMakeList.txt)
 * mkdir build
 * cd build
 * cmake ..
 * make
+  
 4.	Compile SumoWrapper
 * Adjust Makefile
 * Run make

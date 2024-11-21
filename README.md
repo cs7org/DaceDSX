@@ -44,21 +44,29 @@
 * create an empty config.h file and add it to the build folder in sumo
 * Install SUMOLibraries in the parent directory (/../sumo) using https://github.com/DLR-TS/SUMOLibraries 
 2.	Install missing libraries (Preferably in DaceDS folder)
-* [avro](https://github.com/apache/avro) Check the instructions from https://github.com/apache/avro/blob/main/lang/c++/README. Make the installation for both avro/lang/c++ and avro/lang/c. Make sure to run sudo make install at the end. Check /usr/local/include for avro.h and avro. 
-* [libserdes](https://github.com/confluentinc/libserdes)
-* [librdkafka](https://github.com/confluentinc/librdkafka)
-* [cppkafka](https://github.com/mfontanini/cppkafka)
-* [pugixml](https://github.com/zeux/pugixml)
-* Run the following commands for building cppkafka and pugixml libraries:
-  * mkdir build
-  * cd build
-  * cmake ..
-  * make -j5
-  * sudo make install
-* Run the following commands for building librdkafka and libserdes libraries:
-  * ./configure
-  * make -j5
-  * sudo make install
+   - Install **SUMOLibraries** in the parent directory (`/../sumo`) using this [guide](https://github.com/DLR-TS/SUMOLibraries).
+   - Install the following libraries:
+     - [Avro](https://github.com/apache/avro): Follow the [instructions](https://github.com/apache/avro/blob/main/lang/c++/README) for both `avro/lang/c++` and `avro/lang/c`.
+     - [Libserdes](https://github.com/confluentinc/libserdes)
+     - [Librdkafka](https://github.com/confluentinc/librdkafka)
+     - [CppKafka](https://github.com/mfontanini/cppkafka)
+     - [PugiXML](https://github.com/zeux/pugixml)
+
+3. **Build Libraries**:
+   - For **CppKafka** and **PugiXML**:
+     ```bash
+     mkdir build
+     cd build
+     cmake ..
+     make -j5
+     sudo make install
+     ```
+   - For **Librdkafka** and **Libserdes**:
+     ```bash
+     ./configure (#modify the `configure` script to use C++17 if build issues occur)
+     make -j5
+     sudo make install
+     ```
  
 3.	Compile CppBaseWrapper (adapt files in CMakeList.txt)
 * mkdir build
@@ -72,11 +80,14 @@
 5. Install gnome-terminal
 6. Make sure the paths in `_data\executables\SumoWrapper\run.sh` are correct before running a scenario
 
-## What to do to run a PyPSA-scenario:
+## Running a PyPSA Scenario
 
-1. Install Python [(Download Link)](https://www.python.org/downloads/)
-2. Install PyPSA [(Installation Guide)](https://pypsa-eur.readthedocs.io/en/latest/installation.html)
-3. Install [confluent-kafka](https://pypi.org/project/confluent-kafka/)
-4. Install [avro](https://pypi.org/project/avro/) (Maybe you also have to install [pytables](https://www.pytables.org/usersguide/installation.html))
-5. Create a scenario file and place it under _data/scenarios
-6. Run the scenario by following the *"What to do to run a scenario"* instructions
+1. **Install Python**: [Download Python](https://www.python.org/downloads/) and set it up.
+2. **Install PyPSA**: Follow the [installation guide](https://pypsa-eur.readthedocs.io/en/latest/installation.html).
+3. **Install Required Python Packages**:
+   ```bash
+   pip install confluent-kafka avro tables
+   ```
+4. Create a scenario file and place it in `_data/scenarios`.
+5. Follow the general instructions in the **"Running a DaceDS Scenario"** section.
+

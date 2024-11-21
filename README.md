@@ -44,7 +44,7 @@
 * create an empty config.h file and add it to the build folder in sumo
 * Install SUMOLibraries in the parent directory (/../sumo) using https://github.com/DLR-TS/SUMOLibraries 
 2.	Install missing libraries (Preferably in DaceDS folder)
-* [avro] (https://github.com/apache/avro). Check the instructions from https://github.com/apache/avro/blob/main/lang/c++/README. Make the installation for both avro/lang/c++ and avro/lang/c. Make sure to run sudo make install at the end. Check /usr/local/include for avro.h and avro. 
+* [avro](https://github.com/apache/avro) Check the instructions from https://github.com/apache/avro/blob/main/lang/c++/README. Make the installation for both avro/lang/c++ and avro/lang/c. Make sure to run sudo make install at the end. Check /usr/local/include for avro.h and avro. 
 * [libserdes](https://github.com/confluentinc/libserdes)
 * [librdkafka](https://github.com/confluentinc/librdkafka)
 * [cppkafka](https://github.com/mfontanini/cppkafka)

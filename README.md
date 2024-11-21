@@ -68,16 +68,19 @@
      sudo make install
      ```
  
-3.	Compile CppBaseWrapper (adapt files in CMakeList.txt)
-* mkdir build
-* cd build
-* cmake ..
-* make
+3.	Compile CppBaseWrapper (adapt files in `CMakeLists.txt`)
+
+     ```bash
+     mkdir build
+     cd build
+     cmake ..
+     make -j5
+     ```
   
 4.	Compile SumoWrapper
-* Adjust Makefile
-* Run make
-5. Install gnome-terminal
+* Adjust `Makefile`
+* Run `make`
+5. Install gnome-terminal: `sudo apt install gnome-terminal`
 6. Make sure the paths in `_data\executables\SumoWrapper\run.sh` are correct before running a scenario
 
 ## Running a PyPSA Scenario

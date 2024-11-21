@@ -41,16 +41,14 @@
 * https://sumo.dlr.de/docs/Installing/
 * https://sumo.dlr.de/docs/Installing/Linux_Build.html
 * export CMAKE_PREFIX_PATH=path_to_sumo_build/sumo/build:$CMAKE_PREFIX_PATH
-* create an empty config.h file and add it to the build folder in sumo
-* Install SUMOLibraries in the parent directory (/../sumo) using https://github.com/DLR-TS/SUMOLibraries 
+* Create an empty config.h file and add it to the build folder in sumo
+* Install **SUMOLibraries** in the parent directory (`/../sumo`) using this [guide](https://github.com/DLR-TS/SUMOLibraries).
 2.	Install missing libraries (Preferably in DaceDS folder)
-   - Install **SUMOLibraries** in the parent directory (`/../sumo`) using this [guide](https://github.com/DLR-TS/SUMOLibraries).
-   - Install the following libraries:
-     - [Avro](https://github.com/apache/avro): Follow the [instructions](https://github.com/apache/avro/blob/main/lang/c++/README) for both `avro/lang/c++` and `avro/lang/c`.
-     - [Libserdes](https://github.com/confluentinc/libserdes)
-     - [Librdkafka](https://github.com/confluentinc/librdkafka)
-     - [CppKafka](https://github.com/mfontanini/cppkafka)
-     - [PugiXML](https://github.com/zeux/pugixml)
+  - [Avro](https://github.com/apache/avro): Follow the [instructions](https://github.com/apache/avro/blob/main/lang/c++/README) for both `avro/lang/c++` and `avro/lang/c`.
+  - [Libserdes](https://github.com/confluentinc/libserdes)
+  - [Librdkafka](https://github.com/confluentinc/librdkafka)
+  - [CppKafka](https://github.com/mfontanini/cppkafka)
+  - [PugiXML](https://github.com/zeux/pugixml)
 
 3. **Build Libraries**:
    - For **CppKafka** and **PugiXML**:

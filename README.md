@@ -111,8 +111,9 @@ Further we provide a contribution guide and information on the licensing and pub
 You are welcome to contribute to DaceDS via bug reports and feature requests at any time.
 
 ## License
-This work is licensed under the Apache License, Version 2.0. 
-You can find further information in the [LICENSE](./LICENSE)-file or on this [website](http://www.apache.org/licenses/LICENSE-2.0).
+This project is primarily licensed under the MIT License. However, files in the `CppBaseWrapper/src/datamodel/` directory and the file `PythonWrapper/src/communication/AvroProducerConsumer.py` remain under the Apache License 2.0.
+You can find further information on the MIT License in the [LICENSE](./LICENSE)-file or on this [website](https://choosealicense.com/licenses/mit/).
+For mor information on the Apache License 2.0 take a look at the [LICENSE-APACHE](./CppBaseWrapper/src/datamodel/LICENSE-APACHE)-file or on this [website](https://www.apache.org/licenses/LICENSE-2.0).
 
 ## Publications
 

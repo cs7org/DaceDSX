@@ -1,4 +1,4 @@
-*/*
+/*
 MIT License
 
 Copyright 2021 Moritz Gütlein

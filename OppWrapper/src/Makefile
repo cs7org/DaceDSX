@@ -3,10 +3,10 @@
 ###############################################################################
 
 # User-customizable paths (change these as needed)
-DACE_ROOT         ?= /home/$(USER)/Desktop/DaceDS
+DACE_ROOT         ?= /home/$(USER)/Desktop/DaceDSX
 VEINS_ROOT        ?= $(DACE_ROOT)/veins-veins-5.1
-WRAPPER_SRC_ROOT  ?= $(DACE_ROOT)/DaceDS4energy-main/CppBaseWrapper/src
-WRAPPER_LIB_DIR   ?= $(DACE_ROOT)/DaceDS4energy-main/CppBaseWrapper/lib
+WRAPPER_SRC_ROOT  ?= $(DACE_ROOT)/CppBaseWrapper/src
+WRAPPER_LIB_DIR   ?= $(DACE_ROOT)/CppBaseWrapper/lib
 SERDES_CPP_LIB    ?= $(DACE_ROOT)/libserdes/src-cpp
 SERDES_C_LIB      ?= $(DACE_ROOT)/libserdes/src
 SUMO_HOME         ?= /home/mohamed/Desktop/DaceDS/sumo

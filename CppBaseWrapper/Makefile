@@ -1,12 +1,15 @@
+DACEDS = /home/mohamed/Desktop/DaceDSX/ #adapt this path
+
 CC      = /usr/bin/g++
-SRC     = /home/mohamed/Desktop/DaceDS/DaceDS4energy-main/CppBaseWrapper/src
-LIB     = /home/mohamed/Desktop/DaceDS/DaceDS4energy-main/CppBaseWrapper/lib
+SRC     = $(DACEDS)/CppBaseWrapper/src
+LIB     = $(DACEDS)/CppBaseWrapper/lib
 
 CFLAGS  = -fPIC -fpermissive -std=c++17 -w -Ofast \
-          -I$(SRC) -I/usr/local/include/librdkafka -I/home/mohamed/Desktop/DaceDS/
+          -I$(SRC) -I/usr/local/include/librdkafka -I $(DACEDS)
 
-SERDESCPP = /home/mohamed/Desktop/DaceDS/libserdes/src-cpp
-SERDESC = /home/mohamed/Desktop/DaceDS/libserdes/src
+SERDESCPP = $(DACEDS)/libserdes/src-cpp
+SERDESC =  $(DACEDS)/libserdes/src
+
 LDFLAGS = -rdynamic -lavrocpp -L$(SERDESCPP) -lserdes++ -pthread -lrdkafka++ -lcppkafka -L$(SERDESC) -lserdes -lrdkafka
 
 SRCS = \
@@ -36,4 +39,3 @@ clean:
 	rm -rf *.o *.so $(LIB)/libsimwrapper.so
 
 .PHONY: all clean
-

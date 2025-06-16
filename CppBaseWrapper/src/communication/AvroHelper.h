@@ -41,7 +41,7 @@ In 2025, it has been relicensed under the MIT License (https://choosealicense.co
 #include "datamodel/MicroDetector.hh"
 #include "datamodel/MicroEdge.hh"
 //#include "datamodel/MicroList.hh"
-//#include "datamodel/RadioMsg.hh"
+#include "datamodel/RadioMsg.hh"
 #include "datamodel/ResourceFile.hh"
 #include "datamodel/Scenario.hh"
 //#include "datamodel/StatusMsg.hh"
@@ -113,10 +113,10 @@ class AvroHelper {
     std::vector<char> encodeSyncMsg(datamodel::SyncMsg& syncMsg);
     datamodel::SyncMsg decodeSyncMsg(const std::string& pfx, const void* buf, size_t len);
 
-    // std::vector<char> encodeRadioMsg11p(datamodel::RadioMsg11p& msg);
-    // datamodel::RadioMsg11p decodeRadioMsg11p(const std::string& pfx, const void* buf, size_t len);
-//    std::vector<char> encodeRadioMsg(datamodel::RadioMsg& msg);
-//    datamodel::RadioMsg decodeRadioMsg(const std::string& pfx, const void* buf, size_t len);
+     //std::vector<char> encodeRadioMsg11p(datamodel::RadioMsg11p& msg);
+     //datamodel::RadioMsg11p decodeRadioMsg11p(const std::string& pfx, const void* buf, size_t len);
+    std::vector<char> encodeRadioMsg(datamodel::RadioMsg& msg);
+    datamodel::RadioMsg decodeRadioMsg(const std::string& pfx, const void* buf, size_t len);
 
 
     std::vector<char> encodeInteractionMsg(datamodel::InteractionMsg& msg);

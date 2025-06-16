@@ -1,0 +1,88 @@
+version 2
+run General-0-20250611-12:47:27-38037
+attr configname General
+attr datetime 20250611-12:47:27
+attr experiment General
+attr inifile ../../simulations/omnetpp.ini
+attr iterationvars ""
+attr iterationvarsf ""
+attr measurement ""
+attr network daceDSBaseScenario
+attr processid 38037
+attr repetition 0
+attr replication #0
+attr resultdir results
+attr runnumber 0
+attr seedset 0
+param KafkaBaseScenario.kmanager.mountainScenarioID UC4
+param KafkaBaseScenario.kmanager.mountainSimulatorID OMNeTWrapper2
+param *.playgroundSizeX 25000m
+param *.playgroundSizeY 25000m
+param *.playgroundSizeZ 50m
+param daceDSBaseScenario.kmanager.updateInterval 1s
+param daceDSBaseScenario.kmanager.ScenarioID "\"UC4\""
+param daceDSBaseScenario.kmanager.SimulatorID "\"OMNeTWrapper2\""
+param daceDSBaseScenario.kmanager.SyncedParticipants 3
+param *.connectionManager.sendDirect true
+param *.connectionManager.maxInterfDist 2600m
+param *.connectionManager.drawMaxIntfDist false
+param *.**.nic.mac1609_4.useServiceChannel false
+param *.**.nic.mac1609_4.txPower 20mW
+param *.**.nic.mac1609_4.bitrate 6Mbps
+param *.**.nic.phy80211p.minPowerLevel -110dBm
+param *.**.nic.phy80211p.useNoiseFloor true
+param *.**.nic.phy80211p.noiseFloor -98dBm
+param *.**.nic.phy80211p.usePropagationDelay true
+param *.**.nic.phy80211p.decider "xmldoc(\"/home/mohamed/Desktop/DaceDS/DaceDS4energy-main/OppWrapper/Wrapper/simulations/config.xml\")"
+param *.**.nic.phy80211p.analogueModels "xmldoc(\"/home/mohamed/Desktop/DaceDS/DaceDS4energy-main/OppWrapper/Wrapper/simulations/config.xml\")"
+param *.**.nic.phy80211p.antenna "xmldoc(\"/home/mohamed/Desktop/DaceDS/DaceDS4energy-main/OppWrapper/Wrapper/simulations/antenna.xml\", \"/root/Antenna[@id='monopole']\")"
+param *.node[*].nic.phy80211p.antennaOffsetY 0m
+param *.node[*].nic.phy80211p.antennaOffsetZ 1.895m
+param *.node[*].applType "\"TriggerMsgApp\""
+param *.node[*].appl.headerLength 80bit
+param *.node[*].appl.sendBeacons true
+param *.node[*].appl.dataOnSch false
+param *.node[*].appl.beaconInterval 1s
+param *.node[*].veinsmobility.x 0
+param *.node[*].veinsmobility.y 0
+param *.node[*].veinsmobility.z 0
+param *.node[*].veinsmobility.setHostSpeed false
+param *.node[*0].veinsmobility.accidentCount 0
+
+scalar daceDSBaseScenario.node[0].appl generatedRadioMessages 1
+scalar daceDSBaseScenario.node[0].appl receivedRadioMessages 0
+scalar daceDSBaseScenario.node[0].appl generatedWSMs 0
+scalar daceDSBaseScenario.node[0].appl receivedWSMs 0
+scalar daceDSBaseScenario.node[0].nic.phy80211p busyTime 0
+scalar daceDSBaseScenario.node[0].nic.mac1609_4 ReceivedUnicastPackets 0
+scalar daceDSBaseScenario.node[0].nic.mac1609_4 ReceivedBroadcasts 0
+scalar daceDSBaseScenario.node[0].nic.mac1609_4 SentPackets 1
+scalar daceDSBaseScenario.node[0].nic.mac1609_4 SentAcknowledgements 0
+scalar daceDSBaseScenario.node[0].nic.mac1609_4 RetriesExceeded 0
+scalar daceDSBaseScenario.node[0].nic.mac1609_4 SNIRLostPackets 0
+scalar daceDSBaseScenario.node[0].nic.mac1609_4 RXTXLostPackets 0
+scalar daceDSBaseScenario.node[0].nic.mac1609_4 TotalLostPackets 0
+scalar daceDSBaseScenario.node[0].nic.mac1609_4 DroppedPacketsInMac 0
+scalar daceDSBaseScenario.node[0].nic.mac1609_4 TooLittleTime 0
+scalar daceDSBaseScenario.node[0].nic.mac1609_4 TimesIntoBackoff 1
+scalar daceDSBaseScenario.node[0].nic.mac1609_4 SlotsBackoff 3
+scalar daceDSBaseScenario.node[0].nic.mac1609_4 NumInternalContention 0
+scalar daceDSBaseScenario.node[0].nic.mac1609_4 totalBusyTime 0.000273
+scalar daceDSBaseScenario.node[0].nic.mac1609_4 retriesExceeded:count 0
+attr source org_car2x_veins_modules_mac_sigRetriesExceeded
+scalar daceDSBaseScenario.node[0].nic.mac1609_4 sentAcks:count 0
+attr source org_car2x_veins_modules_mac_sigSentAck
+scalar daceDSBaseScenario.node[0].nic.mac1609_4 sentPackets:count 1
+attr source org_car2x_veins_modules_mac_sigSentPacket
+scalar daceDSBaseScenario.node[0].nic.mac1609_4 collisions:count 0
+attr source org_car2x_veins_modules_mac_sigCollision
+scalar daceDSBaseScenario.node[0].nic.mac1609_4 channelBusy:timeavg 0.000273
+attr source org_car2x_veins_modules_mac_sigChannelBusy
+scalar daceDSBaseScenario.node[0].veinsmobility startTime 4
+scalar daceDSBaseScenario.node[0].veinsmobility totalTime 1
+scalar daceDSBaseScenario.node[0].veinsmobility stopTime 5
+scalar daceDSBaseScenario.node[0].veinsmobility minSpeed 0
+scalar daceDSBaseScenario.node[0].veinsmobility maxSpeed 0
+scalar daceDSBaseScenario.node[0].veinsmobility totalDistance 0.038883308818443
+scalar daceDSBaseScenario.node[0].veinsmobility totalCO2Emission 0
+

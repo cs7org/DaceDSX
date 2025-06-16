@@ -29,6 +29,7 @@ $(SRC)/util/Config.cpp \
 $(SRC)/util/Utils.cpp
 
 all:
+	mkdir -p $(LIB)
 	$(CC) -shared -o $(LIB)/libsimwrapper.so $(SRCS) $(CFLAGS) $(LDFLAGS)
 
 clean:

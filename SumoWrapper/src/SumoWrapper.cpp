@@ -127,6 +127,9 @@ void daceDS::SumoWrapper::runWrapper() {
 
     //FIXME: what to do for runs, where we may cover all nodes or none?
     //tmp workaround:
+    std::string missing_topic = "interaction.simulation." + scenarioID + ".traffic.micro.request"; //tmp fix
+    cout << "here is the missing topic" << std::endl;
+    producer->createTopic(missing_topic);
     if (incomingLinks.size()==0){ incomingLinks.push_back("42foo");  }
     if (responsibleLinks.size()==0){ responsibleLinks.push_back("42foo"); }
     for(std::string link : responsibleLinks){

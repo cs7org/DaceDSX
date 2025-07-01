@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<net>
+  <location netOffset="0.0,0.0" convBoundary="0.0,0.0,5000,600" origBoundary="0.0,0.0,0.0,0.0"/>
+  <junction id="J_START" type="priority" x="0" y="0"/>
+  <junction id="J_ON" type="priority" x="1500.0" y="0"/>
+  <junction id="J_OFF" type="priority" x="3500.0" y="0"/>
+  <junction id="J_END" type="priority" x="5000" y="0"/>
+  <edge id="E_MAIN" fromJunction="J_START" to="J_END" priority="14" type="highway.motorway">
+    <lane id="E_MAIN_0" index="0" speed="33.33" length="5000" shape="0,0 5000,0"/>
+  </edge>
+  <edge id="E_ON" fromJunction="J_ON" to="J_MAIN_ON" priority="9" type="highway.motorway_link">
+    <lane id="E_ON_0" index="0" speed="22.22" length="300" shape="1500.0,-300 1500.0,0"/>
+  </edge>
+  <edge id="E_OFF" fromJunction="J_MAIN_OFF" to="J_OFF" priority="9" type="highway.motorway_link">
+    <lane id="E_OFF_0" index="0" speed="22.22" length="300" shape="3500.0,0 3500.0,300"/>
+  </edge>
+  <junction id="J_MAIN_ON" type="priority" x="1500.0" y="0"/>
+  <junction id="J_MAIN_OFF" type="priority" x="3500.0" y="0"/>
+</net>

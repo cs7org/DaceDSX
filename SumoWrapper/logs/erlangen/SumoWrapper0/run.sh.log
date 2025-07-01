@@ -1,0 +1,193 @@
+../SumoWrapper/SumoWrapper: /usr/local/lib/libcurl.so.4: no version information available (required by /lib/libgdal.so.30)
+../SumoWrapper/SumoWrapper: /usr/local/lib/libcurl.so.4: no version information available (required by /lib/x86_64-linux-gnu/libnetcdf.so.19)
+../SumoWrapper/SumoWrapper: /usr/local/lib/libcurl.so.4: no version information available (required by /lib/x86_64-linux-gnu/libhdf5_serial.so.103)
+rootDir=/home/mohamed/Desktop/DaceDS/DaceDS4energy-main/_data
+logDir=/mnt/c/Users/seiwerth/Desktop/DaceDs4energy_clean/_data/log
+simulatorLogFile=sumo.log
+simulatorErrorLogFile=sumo_error.log
+schemaRegistry=http://localhost:8081
+kafkaBroker=localhost:9092
+kafkaLogLevel=msg
+channelOrchestration=orchestration.simulation
+channelInteraction=interaction.simulation
+channelProvision=provision.simulation
+topicScenario=scenario
+topicResult=result
+topicResource=resource
+topicSyncMsg=sync
+topicStatusMsg=status
+topicCtrlMsg=ctrl
+defaultConf=resource/default/default.sumocfg
+defaultTraffic=resource/default/no.rou.xml
+exe=./sumo-git/bin/sumo-gui
+sumoHost=127.0.0.1
+sumoPort=19234
+nativeProcessingString=native
+topicMicro=micro
+coSimRespForAllTag=all
+SumoWrapper started with sceID=erlangen and simID=SumoWrapper0
+running wrapper
+%4|1751355653.039|CONFWARN|erlangen_SumoWrapper0_provision#producer-1| [thrd:app]: Configuration property enable.auto.commit is a consumer property and will be ignored by this producer instance
+
+ CREATING TOPICS SOON
+%4|1751355653.044|CONFWARN|erlangen_SumoWrapper0_status#producer-2| [thrd:app]: Configuration property enable.auto.commit is a consumer property and will be ignored by this producer instance
+
+ CREATING TOPICS SOON
+
+ CREATING TOPIC: orchestration.simulation.erlangen.status
+%4|1751355653.052|CONFWARN|erlangen_SumoWrapper0__scenario_consumer#consumer-3| [thrd:app]: Configuration property socket.blocking.max.ms is deprecated: No longer used.
+%4|1751355653.052|CONFWARN|erlangen_SumoWrapper0__scenario_consumer#consumer-3| [thrd:app]: Configuration property message.send.max.retries is a producer property and will be ignored by this consumer instance
+%4|1751355653.052|CONFWARN|erlangen_SumoWrapper0__scenario_consumer#consumer-3| [thrd:app]: Configuration property request.required.acks is a producer property and will be ignored by this consumer instance
+% SERDES-7-SCHEMA_LOAD: Received schema eu.fau.cs7.daceDS.datamodel.Micro (3) definition: {"type":"record","name":"Micro","namespace":"eu.fau.cs7.daceDS.datamodel","fields":[{"name":"vehicleID","type":"string"},{"name":"acceleration","type":"double"},{"name":"angle","type":"double"},{"name":"edge","type":"string"},{"name":"lane","type":"int"},{"name":"position","type":{"type":"record","name":"Vec3","fields":[{"name":"x","type":"double"},{"name":"y","type":"double"},{"name":"z","type":"double"}]}},{"name":"positionEdge","type":"do
+% SERDES-7-SCHEMA_FETCH: Succesfully fetched schema eu.fau.cs7.daceDS.datamodel.Micro id 3: {"type":"record","name":"Micro","namespace":"eu.fau.cs7.daceDS.datamodel","fields":[{"name":"vehicleID","type":"string"},{"name":"acceleration","type":"double"},{"name":"angle","type":"double"},{"name":"edge","type":"string"},{"name":"lane","type":"int"},{"name":"position","type":{"type":"record","name":"Vec3","fields":[{"name":"x","type":"double"},{"name":"y","type":"double"},{"name":"z","type":"double"}]}},{"name":"positionEdge","type":"d
+% SERDES-7-SCHEMA_LOAD: Received schema eu.fau.cs7.daceDS.datamodel.MicroDetector (4) definition: {"type":"record","name":"MicroDetector","namespace":"eu.fau.cs7.daceDS.datamodel","fields":[{"name":"detectorID","type":"string"},{"name":"values","type":{"type":"map","values":["boolean","double","int","string"]}}]}
+% SERDES-7-SCHEMA_FETCH: Succesfully fetched schema eu.fau.cs7.daceDS.datamodel.MicroDetector id 4: {"type":"record","name":"MicroDetector","namespace":"eu.fau.cs7.daceDS.datamodel","fields":[{"name":"detectorID","type":"string"},{"name":"values","type":{"type":"map","values":["boolean","double","int","string"]}}]}
+% SERDES-7-SCHEMA_LOAD: Received schema eu.fau.cs7.daceDS.datamodel.MicroEdge (5) definition: {"type":"record","name":"MicroEdge","namespace":"eu.fau.cs7.daceDS.datamodel","fields":[{"name":"edgeID","type":"string"},{"name":"emission","type":"string"},{"name":"flow","type":"double"},{"name":"occupancy","type":"double"},{"name":"speed","type":"double"},{"name":"vehicles","type":{"type":"array","items":{"type":"record","name":"Micro","fields":[{"name":"vehicleID","type":"string"},{"name":"acceleration","type":"double"},{"name":"ang
+% SERDES-7-SCHEMA_FETCH: Succesfully fetched schema eu.fau.cs7.daceDS.datamodel.MicroEdge id 5: {"type":"record","name":"MicroEdge","namespace":"eu.fau.cs7.daceDS.datamodel","fields":[{"name":"edgeID","type":"string"},{"name":"emission","type":"string"},{"name":"flow","type":"double"},{"name":"occupancy","type":"double"},{"name":"speed","type":"double"},{"name":"vehicles","type":{"type":"array","items":{"type":"record","name":"Micro","fields":[{"name":"vehicleID","type":"string"},{"name":"acceleration","type":"double"},{"name":"an
+% SERDES-7-SCHEMA_LOAD: Received schema eu.fau.cs7.daceDS.datamodel.ResourceFile (1) definition: {"type":"record","name":"ResourceFile","namespace":"eu.fau.cs7.daceDS.datamodel","fields":[{"name":"ID","type":"string"},{"name":"Type","type":"string"},{"name":"File","type":["null","bytes"],"default":null},{"name":"FileReference","type":["null","string"],"default":null}]}
+% SERDES-7-SCHEMA_FETCH: Succesfully fetched schema eu.fau.cs7.daceDS.datamodel.ResourceFile id 1: {"type":"record","name":"ResourceFile","namespace":"eu.fau.cs7.daceDS.datamodel","fields":[{"name":"ID","type":"string"},{"name":"Type","type":"string"},{"name":"File","type":["null","bytes"],"default":null},{"name":"FileReference","type":["null","string"],"default":null}]}
+% SERDES-7-SCHEMA_LOAD: Received schema eu.fau.cs7.daceDS.datamodel.Scenario (2) definition: {"type":"record","name":"Scenario","namespace":"eu.fau.cs7.daceDS.datamodel","fields":[{"name":"scenarioID","type":"string"},{"name":"domainReferences","type":{"type":"map","values":"string","default":{}}},{"name":"simulationStart","type":"long"},{"name":"simulationEnd","type":"long"},{"name":"execution","type":{"type":"record","name":"Execution","fields":[{"name":"randomSeed","type":"long"},{"name":"constraints","type":"string"},{"name":
+% SERDES-7-SCHEMA_FETCH: Succesfully fetched schema eu.fau.cs7.daceDS.datamodel.Scenario id 2: {"type":"record","name":"Scenario","namespace":"eu.fau.cs7.daceDS.datamodel","fields":[{"name":"scenarioID","type":"string"},{"name":"domainReferences","type":{"type":"map","values":"string","default":{}}},{"name":"simulationStart","type":"long"},{"name":"simulationEnd","type":"long"},{"name":"execution","type":{"type":"record","name":"Execution","fields":[{"name":"randomSeed","type":"long"},{"name":"constraints","type":"string"},{"name"
+% SERDES-7-SCHEMA_LOAD: Received schema eu.fau.cs7.daceDS.datamodel.Ctrl (6) definition: {"type":"record","name":"CtrlMsg","namespace":"eu.fau.cs7.daceDS.datamodel","fields":[{"name":"Sender","type":"string"},{"name":"Command","type":"string"}]}
+% SERDES-7-SCHEMA_FETCH: Succesfully fetched schema eu.fau.cs7.daceDS.datamodel.Ctrl id 6: {"type":"record","name":"CtrlMsg","namespace":"eu.fau.cs7.daceDS.datamodel","fields":[{"name":"Sender","type":"string"},{"name":"Command","type":"string"}]}
+% SERDES-7-SCHEMA_LOAD: Received schema eu.fau.cs7.daceDS.datamodel.PrimitiveString (7) definition (wrapped): { "type": "string" }
+% SERDES-7-SCHEMA_FETCH: Succesfully fetched schema eu.fau.cs7.daceDS.datamodel.PrimitiveString id 7: "string"
+% SERDES-7-SCHEMA_LOAD: Received schema eu.fau.cs7.daceDS.datamodel.PrimitiveDouble (8) definition (wrapped): { "type": "double" }
+% SERDES-7-SCHEMA_FETCH: Succesfully fetched schema eu.fau.cs7.daceDS.datamodel.PrimitiveDouble id 8: "double"
+% SERDES-7-SCHEMA_LOAD: Received schema eu.fau.cs7.daceDS.datamodel.PrimitiveInteger (9) definition (wrapped): { "type": "int" }
+% SERDES-7-SCHEMA_FETCH: Succesfully fetched schema eu.fau.cs7.daceDS.datamodel.PrimitiveInteger id 9: "int"
+% SERDES-7-SCHEMA_LOAD: Received schema eu.fau.cs7.daceDS.datamodel.ListString (10) definition: {"type":"array","items":"string"}
+% SERDES-7-SCHEMA_FETCH: Succesfully fetched schema eu.fau.cs7.daceDS.datamodel.ListString id 10: {"type":"array","items":"string"}
+% SERDES-7-SCHEMA_LOAD: Received schema eu.fau.cs7.daceDS.datamodel.ListDouble (11) definition: {"type":"array","items":"double"}
+% SERDES-7-SCHEMA_FETCH: Succesfully fetched schema eu.fau.cs7.daceDS.datamodel.ListDouble id 11: {"type":"array","items":"double"}
+% SERDES-7-SCHEMA_LOAD: Received schema eu.fau.cs7.daceDS.datamodel.ListMicro (12) definition: {"type":"array","items":{"type":"record","name":"Micro","namespace":"eu.fau.cs7.daceDS.datamodel","fields":[{"name":"vehicleID","type":"string"},{"name":"acceleration","type":"double"},{"name":"angle","type":"double"},{"name":"edge","type":"string"},{"name":"lane","type":"int"},{"name":"position","type":{"type":"record","name":"Vec3","fields":[{"name":"x","type":"double"},{"name":"y","type":"double"},{"name":"z","type":"double"}]}},{"na
+% SERDES-7-SCHEMA_FETCH: Succesfully fetched schema eu.fau.cs7.daceDS.datamodel.ListMicro id 12: {"type":"array","items":{"type":"record","name":"Micro","namespace":"eu.fau.cs7.daceDS.datamodel","fields":[{"name":"vehicleID","type":"string"},{"name":"acceleration","type":"double"},{"name":"angle","type":"double"},{"name":"edge","type":"string"},{"name":"lane","type":"int"},{"name":"position","type":{"type":"record","name":"Vec3","fields":[{"name":"x","type":"double"},{"name":"y","type":"double"},{"name":"z","type":"double"}]}},{"n
+% SERDES-7-SCHEMA_LOAD: Received schema eu.fau.cs7.daceDS.datamodel.SyncMsg (13) definition: {"type":"record","name":"SyncMsg","namespace":"eu.fau.cs7.daceDS.datamodel","fields":[{"name":"Sender","type":"string"},{"name":"Action","type":"string","default":"request"},{"name":"Time","type":"long"},{"name":"Epoch","type":"int","default":0},{"name":"Messages","type":{"type":"map","values":"long","default":{}}}]}
+% SERDES-7-SCHEMA_FETCH: Succesfully fetched schema eu.fau.cs7.daceDS.datamodel.SyncMsg id 13: {"type":"record","name":"SyncMsg","namespace":"eu.fau.cs7.daceDS.datamodel","fields":[{"name":"Sender","type":"string"},{"name":"Action","type":"string","default":"request"},{"name":"Time","type":"long"},{"name":"Epoch","type":"int","default":0},{"name":"Messages","type":{"type":"map","values":"long","default":{}}}]}
+% SERDES-7-SCHEMA_LOAD: Received schema eu.fau.cs7.daceDS.datamodel.Vec3 (14) definition: {"type":"record","name":"Vec3","namespace":"eu.fau.cs7.daceDS.datamodel","fields":[{"name":"x","type":"double"},{"name":"y","type":"double"},{"name":"z","type":"double"}]}
+% SERDES-7-SCHEMA_FETCH: Succesfully fetched schema eu.fau.cs7.daceDS.datamodel.Vec3 id 14: {"type":"record","name":"Vec3","namespace":"eu.fau.cs7.daceDS.datamodel","fields":[{"name":"x","type":"double"},{"name":"y","type":"double"},{"name":"z","type":"double"}]}
+% SERDES-7-SCHEMA_LOAD: Received schema eu.fau.cs7.daceDS.datamodel.RadioMsg (15) definition: {"type":"record","name":"RadioMsg","namespace":"eu.fau.cs7.daceDS.datamodel","fields":[{"name":"sender","type":"string","default":""},{"name":"sendTime","type":"long","default":0},{"name":"receiver","type":"string","default":""},{"name":"receiveTime","type":"long","default":0},{"name":"data","type":{"type":"map","values":"string","default":{}}}]}
+% SERDES-7-SCHEMA_FETCH: Succesfully fetched schema eu.fau.cs7.daceDS.datamodel.RadioMsg id 15: {"type":"record","name":"RadioMsg","namespace":"eu.fau.cs7.daceDS.datamodel","fields":[{"name":"sender","type":"string","default":""},{"name":"sendTime","type":"long","default":0},{"name":"receiver","type":"string","default":""},{"name":"receiveTime","type":"long","default":0},{"name":"data","type":{"type":"map","values":"string","default":{}}}]}
+In KafkaConsumerin subscribenot countingscenarioid=erlangen
+
+Scenario BBs: SumoWrapper0
+
+
+IN SCENARIO
+
+
+
+InstanceID: SumoWrapper0 SIMID: SumoWrapper0
+
+
+2. InstanceID: SumoWrapper0 SIMID: SumoWrapper0
+%4|1751355655.091|CONFWARN|erlangen_SumoWrapper0__interaction_consumer#consumer-4| [thrd:app]: Configuration property socket.blocking.max.ms is deprecated: No longer used.
+%4|1751355655.093|CONFWARN|erlangen_SumoWrapper0__interaction_consumer#consumer-4| [thrd:app]: Configuration property message.send.max.retries is a producer property and will be ignored by this consumer instance
+%4|1751355655.093|CONFWARN|erlangen_SumoWrapper0__interaction_consumer#consumer-4| [thrd:app]: Configuration property request.required.acks is a producer property and will be ignored by this consumer instance
+In KafkaConsumerin subscribenot countingwill wait for resources 
+erlangen.net.xml received: 1
+erlangen.poly.xml received: 1
+erlangen.rou.xml received: 1
+stillwaiting0
+(waiting for resources...)
+(waiting for resources DONE)
+GETFILEBYTYPE: RoadMap
+getting roadmap
+rootDir: /home/mohamed/Desktop/DaceDS/DaceDS4energy-main/_data
+saved to /home/mohamed/Desktop/DaceDS/DaceDS4energy-main/_data/erlangen/SumoWrapper0/resource/sumocfg.sumocfg
+rootDir: /home/mohamed/Desktop/DaceDS/DaceDS4energy-main/_data
+looking for resource at rootDir: /home/mohamed/Desktop/DaceDS/DaceDS4energy-main/_data
+/home/mohamed/Desktop/DaceDS/DaceDS4energy-main/_data/erlangen/SumoWrapper0/resource
+looking for roadmap at /home/mohamed/Desktop/DaceDS/DaceDS4energy-main/_data/erlangen/SumoWrapper0/resource/erlangen.net.xml
+responsible edges:
+
+incoming edges:
+
+outgoing edges:
+
+here is the missing topic
+
+ CREATING TOPIC: interaction.simulation.erlangen.traffic.micro.request
+RESPONSIBLE LINK TOPIC : provision.simulation.erlangen.traffic.micro.edge.42foo.vehicles
+
+ CREATING TOPIC: provision.simulation.erlangen.traffic.micro.edge.42foo.vehicles
+responsibleLinks: 1, incomingLinks: 1, outgoingLinks: 0
+%4|1751355656.163|CONFWARN|erlangen_SumoWrapper0__orchestration_consumer#consumer-5| [thrd:app]: Configuration property socket.blocking.max.ms is deprecated: No longer used.
+%4|1751355656.163|CONFWARN|erlangen_SumoWrapper0__orchestration_consumer#consumer-5| [thrd:app]: Configuration property message.send.max.retries is a producer property and will be ignored by this consumer instance
+%4|1751355656.163|CONFWARN|erlangen_SumoWrapper0__orchestration_consumer#consumer-5| [thrd:app]: Configuration property request.required.acks is a producer property and will be ignored by this consumer instance
+In KafkaConsumerin subscribenot countingHERE: 
+interactionConsumer is nullptr
+HERE: 
+%4|1751355656.166|CONFWARN|erlangen_SumoWrapper0__interaction_consumer#consumer-6| [thrd:app]: Configuration property socket.blocking.max.ms is deprecated: No longer used.
+%4|1751355656.166|CONFWARN|erlangen_SumoWrapper0__interaction_consumer#consumer-6| [thrd:app]: Configuration property message.send.max.retries is a producer property and will be ignored by this consumer instance
+%4|1751355656.166|CONFWARN|erlangen_SumoWrapper0__interaction_consumer#consumer-6| [thrd:app]: Configuration property request.required.acks is a producer property and will be ignored by this consumer instance
+In KafkaConsumerin subscribecountingHERE not? 
+Ghosting is enabled!
+%4|1751355656.167|CONFWARN|erlangen_SumoWrapper0__interaction_consumer#consumer-7| [thrd:app]: Configuration property socket.blocking.max.ms is deprecated: No longer used.
+%4|1751355656.168|CONFWARN|erlangen_SumoWrapper0__interaction_consumer#consumer-7| [thrd:app]: Configuration property message.send.max.retries is a producer property and will be ignored by this consumer instance
+%4|1751355656.168|CONFWARN|erlangen_SumoWrapper0__interaction_consumer#consumer-7| [thrd:app]: Configuration property request.required.acks is a producer property and will be ignored by this consumer instance
+In KafkaConsumerin subscribecountingHERE
+
+ CREATING TOPIC: provision.simulation.erlangen.traffic.micro.vehicle
+%4|1751355656.175|CONFWARN|erlangen_SumoWrapper0_erlangen_SumoWrapper0__timesync#producer-8| [thrd:app]: Configuration property enable.auto.commit is a consumer property and will be ignored by this producer instance
+
+ CREATING TOPICS SOON
+
+ TOPIC: orchestration.simulation.erlangen.sync
+
+ CREATING TOPIC: orchestration.simulation.erlangen.sync
+%4|1751355656.182|CONFWARN|erlangen_SumoWrapper0_erlangen_SumoWrapper0__timesync#consumer-9| [thrd:app]: Configuration property socket.blocking.max.ms is deprecated: No longer used.
+%4|1751355656.182|CONFWARN|erlangen_SumoWrapper0_erlangen_SumoWrapper0__timesync#consumer-9| [thrd:app]: Configuration property message.send.max.retries is a producer property and will be ignored by this consumer instance
+%4|1751355656.182|CONFWARN|erlangen_SumoWrapper0_erlangen_SumoWrapper0__timesync#consumer-9| [thrd:app]: Configuration property request.required.acks is a producer property and will be ignored by this consumer instance
+In KafkaConsumerin subscribenot counting01.07.25 09:40:56.183537 | [INFO] virtual void daceDS::SumoWrapper::runWrapper() | Starting SUMO
+Loading configuration ... done.
+Loading net-file from '/home/mohamed/Desktop/DaceDS/DaceDS4energy-main/_data/erlangen/SumoWrapper0/resource/erlangen.net.xml' ... done (153ms).
+Loading additional-files from '/home/mohamed/Desktop/DaceDS/DaceDS4energy-main/_data/erlangen/SumoWrapper0/resource/erlangen.poly.xml' ... done (16ms).
+Loading additional-files from '/home/mohamed/Desktop/DaceDS/DaceDS4energy-main/_data/erlangen/SumoWrapper0/resource/erlangen.rou.xml' ... done (3ms).
+Loading done.
+Simulation version v1_21_0+1952-abab2fff8fa started via libsumo with time: 0.00.
+WEITER
+01.07.25 09:40:56.457220 | [INFO] virtual void daceDS::SumoWrapper::runWrapper() | Starting SimulationController
+RUN
+JOIN TIMING
+Joined Timing
+Simulation loop is over
+-------------------
+total time for sce =28511us
+total time for sync=2498us
+total time for sumo=21114us
+total time for proc=4us
+total time for obse=4823us
+-------------
+01.07.25 09:40:56.486251 | [INFO] virtual void daceDS::SumoSimulationControl::run() | main loop finished
+01.07.25 09:40:56.487849 | [INFO] virtual void daceDS::SumoWrapper::runWrapper() | SimulationController done
+01.07.25 09:40:56.487859 | [ERROR] void daceDS::SumoWrapper::terminateWrapper() | terminateWrapper() is called: Closing SUMO
+01.07.25 09:40:56.487863 | [INFO] virtual void daceDS::SumoSimulationControl::close() | SumoSimulationControl::close() was triggered
+Simulation ended at time: 25.00.
+Reason: Libsumo requested termination.
+Performance:
+ Duration: 0.10s
+ Real time factor: 263.158
+ UPS: 1231.578947
+Vehicles:
+ Inserted: 9
+ Running: 9
+ Waiting: 0
+01.07.25 09:40:57.168985 | [ERROR] virtual bool daceDS::OrchestrationHandler::handle(daceDS::ConsumedMessage*) | orch msg on orchestration.simulation.erlangen.ctrl
+%4|1751355659.542|CONFWARN|erlangen_SumoWrapper0_results#producer-10| [thrd:app]: Configuration property enable.auto.commit is a consumer property and will be ignored by this producer instance
+
+ CREATING TOPICS SOON
+SEND RESULTS
+rootDir: /home/mohamed/Desktop/DaceDS/DaceDS4energy-main/_data
+RESULT ZIP AT: /home/mohamed/Desktop/DaceDS/DaceDS4energy-main/_data/erlangen/SumoWrapper0/results.zip
+RETURN MODE: LISTED
+rootDir: /home/mohamed/Desktop/DaceDS/DaceDS4energy-main/_data
+rootDir: /home/mohamed/Desktop/DaceDS/DaceDS4energy-main/_data
+CMD STR cd /home/mohamed/Desktop/DaceDS/DaceDS4energy-main/_data/erlangen/SumoWrapper0/output && zip /home/mohamed/Desktop/DaceDS/DaceDS4energy-main/_data/erlangen/SumoWrapper0/results.zip
+sh: 1: cd: can't cd to /home/mohamed/Desktop/DaceDS/DaceDS4energy-main/_data/erlangen/SumoWrapper0/output
+sh: 1: ./compressResults.sh: not found
+01.07.25 09:40:59.565715 | [ERROR] static void daceDS::PrepareRun::sendResults(std::string, std::shared_ptr<daceDS::datamodel::BB>, std::shared_ptr<daceDS::KafkaProducer>) | results.zip was not found, probably there were no result artifacts
+01.07.25 09:40:59.565731 | [ERROR] static void daceDS::PrepareRun::sendResults(std::string, std::shared_ptr<daceDS::datamodel::BB>, std::shared_ptr<daceDS::KafkaProducer>) | cannot create std::vector larger than max_size()
+01.07.25 09:41:09.566472 | [INFO] void daceDS::SumoWrapper::terminateWrapper() | Leaving timing
+01.07.25 09:41:09.566559 | [INFO] void daceDS::SumoWrapper::terminateWrapper() | Stopping consumers
+01.07.25 09:41:09.650420 | [INFO] void daceDS::SumoWrapper::terminateWrapper() | bye bye

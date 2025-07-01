@@ -1,11 +1,21 @@
-/*
-MIT License
+/*******************************************************************************
+ * Copyright 2021 Moritz Gütlein
+ *		logger = Logger.getLogger(SendScenarioObject.class.getName());
 
-Copyright 2021 Moritz Gütlein
-
-This code was originally published under the Apache 2.0 License (http://www.apache.org/licenses/LICENSE-2.0) in 2021.
-In 2025, it has been relicensed under the MIT License (https://choosealicense.com/licenses/mit/) with the explicit permission of all copyright holders.
-*/
+		scepath = Paths.get(args[0]);
+		resourcePath = scepath.getParent();			
+		System.out.println("\n\nresourcepath is "+resourcePath);der the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License.  You may obtain a copy
+ * of the License at
+ * 
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ ******************************************************************************/
 package eu.fau.cs7.daceDS.SimService.Utils;
 
 
@@ -28,6 +38,8 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.nio.file.attribute.PosixFilePermission;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
@@ -38,6 +50,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 
@@ -261,6 +274,12 @@ public class SendScenarioObject
 		}		
 
 		logger.info("Publishing resources... Done!");
+		
+		/************************************************************/
+		/* Create _data folder structure and copy resources */
+		/************************************************************/
+		
+		createDataFolderStructure();
 
 		/************************************************************/
 		/* Listen for feedback? */
@@ -660,5 +679,159 @@ public class SendScenarioObject
 
 		consumer.close();
 		return false;
+	}
+	
+	/**
+	 * Creates _data folder structure with scenarioID/instanceID subfolders
+	 * and copies simulation component resources to appropriate locations
+	 */
+	private static void createDataFolderStructure() {
+		try {
+			// Set full permissions for directories and files (read, write, execute for owner, group, others)
+			Set<PosixFilePermission> fullDirPermissions = PosixFilePermissions.fromString("rwxrwxrwx");
+			Set<PosixFilePermission> fullFilePermissions = PosixFilePermissions.fromString("rw-rw-rw-");
+			
+			// Use rootDir directly from config file
+			// rootDir: /home/mohamed/Desktop/DaceDS/DaceDS4energy-main/_data
+			String rootDir = Config.get("rootDir");
+			Path rootDirPath;
+			if (rootDir != null && !rootDir.isEmpty()) {
+				// Use rootDir directly from config file
+				rootDirPath = Paths.get(rootDir);
+				logger.info("Using root directory from config: " + rootDirPath.toAbsolutePath());
+			} else {
+				// Fallback to relative path if config not available
+				rootDirPath = Paths.get("_data");
+				logger.warn("Config rootDir not found, using fallback: " + rootDirPath.toAbsolutePath());
+			}
+			
+			if (!Files.exists(rootDirPath)) {
+				Files.createDirectories(rootDirPath);
+				Files.setPosixFilePermissions(rootDirPath, fullDirPermissions);
+				logger.info("Created base data directory with full permissions: " + rootDirPath.toAbsolutePath());
+			}
+			
+			// Create scenario directory
+			Path scenarioDir = rootDirPath.resolve(scenarioID);
+			if (!Files.exists(scenarioDir)) {
+				Files.createDirectories(scenarioDir);
+				Files.setPosixFilePermissions(scenarioDir, fullDirPermissions);
+				logger.info("Created scenario directory with full permissions: " + scenarioDir.toAbsolutePath());
+			}
+			
+			// Process BuildingBlocks - create instanceID subdirectories and copy resources
+			for(BB buildingBlock : scenario.getBuildingBlocks()) {
+				String instanceID = buildingBlock.getInstanceID().toString();
+				Path instanceDir = scenarioDir.resolve(instanceID);
+				Path resourcesDir = instanceDir.resolve("resource");
+				
+				if (!Files.exists(instanceDir)) {
+					Files.createDirectories(instanceDir);
+					Files.setPosixFilePermissions(instanceDir, fullDirPermissions);
+					logger.info("Created instance directory with full permissions: " + instanceDir.toAbsolutePath());
+				}
+				
+				if (!Files.exists(resourcesDir)) {
+					Files.createDirectories(resourcesDir);
+					Files.setPosixFilePermissions(resourcesDir, fullDirPermissions);
+					logger.info("Created resources directory with full permissions: " + resourcesDir.toAbsolutePath());
+				}
+				
+				// Copy resources for this building block
+				for(Map.Entry<CharSequence,CharSequence> resourceEntry : buildingBlock.getResources().entrySet()) {
+					String resourceFileName = resourceEntry.getKey().toString();
+					String resourceType = resourceEntry.getValue().toString();
+					
+					Path sourceFile = resourcePath.resolve(resourceFileName);
+					Path targetFile = resourcesDir.resolve(resourceFileName);
+					
+					if (Files.exists(sourceFile)) {
+						Files.copy(sourceFile, targetFile, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+						Files.setPosixFilePermissions(targetFile, fullFilePermissions);
+						logger.info("Copied resource with full permissions: " + resourceFileName + " (type: " + resourceType + ") to " + targetFile.toAbsolutePath());
+					} else {
+						logger.warn("Resource file not found: " + sourceFile.toAbsolutePath());
+					}
+				}
+			}
+			
+			// Process Projectors - create projectorID subdirectories and copy resources
+			for(eu.fau.cs7.daceDS.datamodel.Projector projector : scenario.getProjectors()) {
+				String projectorID = projector.getProjectorID().toString();
+				Path projectorDir = scenarioDir.resolve(projectorID);
+				Path resourcesDir = projectorDir.resolve("resource");
+				
+				if (!Files.exists(projectorDir)) {
+					Files.createDirectories(projectorDir);
+					Files.setPosixFilePermissions(projectorDir, fullDirPermissions);
+					logger.info("Created projector directory with full permissions: " + projectorDir.toAbsolutePath());
+				}
+				
+				if (!Files.exists(resourcesDir)) {
+					Files.createDirectories(resourcesDir);
+					Files.setPosixFilePermissions(resourcesDir, fullDirPermissions);
+					logger.info("Created projector resources directory with full permissions: " + resourcesDir.toAbsolutePath());
+				}
+				
+				// Copy resources for this projector (if any)
+				for(Map.Entry<CharSequence,CharSequence> resourceEntry : projector.getResources().entrySet()) {
+					String resourceFileName = resourceEntry.getKey().toString();
+					String resourceType = resourceEntry.getValue().toString();
+					
+					Path sourceFile = resourcePath.resolve(resourceFileName);
+					Path targetFile = resourcesDir.resolve(resourceFileName);
+					
+					if (Files.exists(sourceFile)) {
+						Files.copy(sourceFile, targetFile, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+						Files.setPosixFilePermissions(targetFile, fullFilePermissions);
+						logger.info("Copied projector resource with full permissions: " + resourceFileName + " (type: " + resourceType + ") to " + targetFile.toAbsolutePath());
+					} else {
+						logger.warn("Projector resource file not found: " + sourceFile.toAbsolutePath());
+					}
+				}
+			}
+			
+			// Process Translators - create translatorID subdirectories and copy resources
+			for(Translator translator : scenario.getTranslators()) {
+				String translatorID = translator.getTranslatorID().toString();
+				Path translatorDir = scenarioDir.resolve(translatorID);
+				Path resourcesDir = translatorDir.resolve("resource");
+				
+				if (!Files.exists(translatorDir)) {
+					Files.createDirectories(translatorDir);
+					Files.setPosixFilePermissions(translatorDir, fullDirPermissions);
+					logger.info("Created translator directory with full permissions: " + translatorDir.toAbsolutePath());
+				}
+				
+				if (!Files.exists(resourcesDir)) {
+					Files.createDirectories(resourcesDir);
+					Files.setPosixFilePermissions(resourcesDir, fullDirPermissions);
+					logger.info("Created translator resources directory with full permissions: " + resourcesDir.toAbsolutePath());
+				}
+				
+				// Copy resources for this translator
+				for(Map.Entry<CharSequence,CharSequence> resourceEntry : translator.getResources().entrySet()) {
+					String resourceFileName = resourceEntry.getKey().toString();
+					String resourceType = resourceEntry.getValue().toString();
+					
+					Path sourceFile = resourcePath.resolve(resourceFileName);
+					Path targetFile = resourcesDir.resolve(resourceFileName);
+					
+					if (Files.exists(sourceFile)) {
+						Files.copy(sourceFile, targetFile, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+						Files.setPosixFilePermissions(targetFile, fullFilePermissions);
+						logger.info("Copied translator resource with full permissions: " + resourceFileName + " (type: " + resourceType + ") to " + targetFile.toAbsolutePath());
+					} else {
+						logger.warn("Translator resource file not found: " + sourceFile.toAbsolutePath());
+					}
+				}
+			}
+			
+			logger.info("_data folder structure creation completed for scenario: " + scenarioID);
+			
+		} catch (IOException e) {
+			logger.error("Failed to create _data folder structure: " + e.getMessage());
+			e.printStackTrace();
+		}
 	}
 }

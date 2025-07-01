@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<net>
+  <location netOffset="0,0" convBoundary="0,0,200,0" origBoundary="0,0,0,0"/>
+  <junction id="J0" type="priority" x="0" y="0"/>
+  <junction id="J1" type="priority" x="200" y="0"/>
+  <edge id="E0" fromJunction="J0" to="J1" priority="1" type="highway.tertiary">
+    <lane id="E0_0" index="0" speed="13.9" length="200" shape="0,0 200,0"/>
+  </edge>
+</net>

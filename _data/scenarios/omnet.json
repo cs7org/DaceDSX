@@ -1,0 +1,29 @@
+	
+scenarioID	"erlangen"
+domainReferences	{}
+simulationStart	0
+simulationEnd	1000
+execution	
+randomSeed	23
+constraints	""
+priority	0
+syncedParticipants	1
+buildingBlocks	
+0	
+instanceID	"SumoWrapper0"
+type	"SumoWrapper"
+layer	"micro"
+domain	"traffic"
+stepLength	1000
+parameters	{}
+resources	
+erlangen.net.xml	"RoadMap"
+erlangen.rou.xml	"Traffic"
+erlangen.poly.xml	"Additional"
+results	{}
+synchronized	true
+isExternal	false
+responsibilities	[]
+observers	[]
+translators	[]
+projectors	[]

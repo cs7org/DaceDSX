@@ -1,0 +1,69 @@
+{
+  "scenarioID": "uc5",
+  "domainReferences": {
+  "traffic": "erlangen.net.xml",
+  "communication" : "antenna.xml"
+  },
+  "simulationStart": 0,
+  "simulationEnd": 86399,
+  "execution": {
+    "randomSeed": 123,
+    "constraints": "",
+    "priority": 0,
+    "syncedParticipants": 2
+  },
+  "buildingBlocks": [
+    {
+      "instanceID": "SumoWrapper0",
+      "type": "SumoWrapper",
+      "layer": "micro",
+      "domain": "traffic",
+      "stepLength": 1000,
+      "parameters": {},
+      "resources": {
+        "erlangen.net.xml": "RoadMap",
+        "erlangen.rou.xml": "Traffic",
+        "erlangen.poly.xml": "Additional"
+      },
+      "results": {},
+      "synchronized": true,
+      "isExternal": false,
+      "responsibilities": [],
+      "observers": []
+    },
+     {
+      "instanceID": "OMNeTWrapper",
+      "type": "OMNeTWrapper",
+      "layer": "80211p",
+      "domain": "communication",
+      "stepLength": 1000,
+      "parameters": {
+      "equipped" : "1.0", 
+      	"beaconing": "1.0"
+      },
+      "resources": {
+        
+      },
+      "results": {
+      	"full" : "results.zip"
+      },
+      "synchronized": true,
+      "isExternal": false,
+      "responsibilities": ["*"],
+      "observers": []
+    }
+  ],
+  "translators": [],
+  " projectors " : [
+{
+"projectorID" : "proj0" ,
+"type" : "v2x" ,
+"domainA" : "traffic" ,
+"layerA" : "micro" ,
+"domainB" : "communication" ,
+"layerB" : "80211p" ,
+"resources" : {} ,
+"parameters" : {}
+}
+]
+}

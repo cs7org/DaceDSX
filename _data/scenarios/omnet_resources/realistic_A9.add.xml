@@ -1,0 +1,5 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<additional>
+  <laneAreaDetector id="det_main" lane="E_MAIN_0" pos="800" freq="1" file="det_main.out"/>
+  <variableSpeedSign id="vss1" lane="E_MAIN_0" pos="100" speed="33.33"/>
+</additional>

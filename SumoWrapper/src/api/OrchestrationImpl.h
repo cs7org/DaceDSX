@@ -15,6 +15,6 @@ class OrchestrationImpl : public Orchestration {
     OrchestrationImpl(SimulationWrapper* w) : Orchestration(w){};
     ~OrchestrationImpl(){};
     void ctrl(OrchestrationTopicMetadata& ometa, datamodel::CtrlMsg& ctrl);
-//    void status(OrchestrationTopicMetadata& ometa, datamodel::StatusMsg& state);
+//   void status(OrchestrationTopicMetadata& ometa, datamodel::StatusMsg& state);
 };
 }  // namespace daceDS

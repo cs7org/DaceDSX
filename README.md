@@ -105,7 +105,38 @@ Further we provide a contribution guide and information on the licensing and pub
    ```
 4. Create a scenario file and place it in `_data/scenarios`.
 5. Follow the general instructions in the **"What to do to run a Scenario in DaceDSX"** section.
+   
+## Running OMNeT++ Wrapper for a V2V Simulation through Veins
 
+## Steps
+
+1. **Download and build OMNeT++**  
+   - Clone from the official repository.  
+   - Checkout version `5.6.1` (recommended).
+
+2. **Download Veins**  
+   - Use version `5.1`.
+
+3. **Prepare Veins project**  
+   - Before building the Veins project, copy all files from `Oppwrapper/veins_files` to `veins/messages`.
+
+4. **Build the Veins project**
+
+5. **Adjust Makefile paths**  
+   - Modify the Makefile under `Oppwrapper/Wrapper/src` to ensure all paths are correctly set.
+
+6. **Build everything**  
+   - Run the script:  
+     ```bash
+     DaceDSX/build_all.sh
+     ```
+
+7. **Run the simulation**  
+   - Execute the following command:  
+     ```bash
+     runSim.sh /path/to/your/scenario/definition/file
+     ```
+     
 
 # Further information
 ## How to Contribute

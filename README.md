@@ -118,7 +118,7 @@ Further we provide a contribution guide and information on the licensing and pub
    - Use version `5.1`.
 
 3. **Prepare Veins project**  
-   - Before building the Veins project, copy all files from `Oppwrapper/veins_files` to `veins/messages`.
+   - Before building the Veins project, copy all files from `Oppwrapper/veins_files` to `veins/src/veins/modules/messages`.
 
 4. **Build the Veins project**
 

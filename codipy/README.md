@@ -130,6 +130,8 @@ Clone the [GitHub Repository](https://github.com/silaslobo/InTAS) of the InTAS p
 
 Then, copy the `InTAS_network_traci_only.sumocfg` file into the folder `InTAS/scenario/`
 
+to run a simulation  `python3.11 simulation_run.py -c path/to/config -p 0 -i 1 -s 50.0`
+
 <a name="documentation"></a>
 ### Documentation
 

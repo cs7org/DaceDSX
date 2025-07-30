@@ -14,17 +14,12 @@ import WlanAPManager as wlan_ap_manager
 import traceback
 import random
 import parameter_parser
+from sumo_interface import SumoFacade, FleetManagerAdapter
 
-if 'SUMO_HOME' in os.environ:
-    tools = os.path.join(os.environ['SUMO_HOME'], 'tools')
-    sys.path.append(tools)
-else:
-    sys.exit("please declare environment variable 'SUMO_HOME'")
-import traci
-import traci.constants as tc
+from sumo_interface import SumoFacade
 
 
-def parse_options(argv: List[str]) -> (str, int, int, float):  # parse multiple logfiles, put plots, calculated
+def parse_options(argv: List[str]) -> tuple[str, int, int, float]:  # parse multiple logfiles, put plots, calculated
     # values and traces in new directory
     """
     Parse command line options.
@@ -310,15 +305,21 @@ def run(config: str, parameter_index: int, iteration_counter: int, seed: float) 
         data_rate = None
     pathlib.Path(output_abs_path).mkdir(parents=True, exist_ok=True)
     os.chdir(output_abs_path)
-    sumo_cmd = [sumo_binary, "-c", sumo_cfg, "--seed", str(int(seed)), "-S"]
-    traci.start(sumo_cmd)
+    
+    # Initialize SUMO interface
+    sumo_facade = SumoFacade()
+    sumo_facade.initialize_and_start(sumo_binary, sumo_cfg, seed)
+    
+    # Create adapter for FleetManager
+    fleet_adapter = FleetManagerAdapter(sumo_facade)
+    
     step = 0
     # chunk_size = 1411
     backend_server = Backend.Backend(1411, initial_seeds, number_vehicles, seeding_strategy)
     v2v_layer = None
     ism_layer = None
     if v2v_device and v2v_equipment_percentage > 0.0:
-        v2v_layer = v2vNetworkingLayer.V2VNetworkingLayer(traci, distance, data_rate,
+        v2v_layer = v2vNetworkingLayer.V2VNetworkingLayer(sumo_facade.get_traci_instance(), distance, data_rate,
                                                           gain, transmission_power,
                                                           pathloss, noisepower, loss_exponent, antenna_height,
                                                           two_ray, log_distance,
@@ -326,7 +327,7 @@ def run(config: str, parameter_index: int, iteration_counter: int, seed: float) 
                                                           )
 
     if wlan_device and wlan_equipment_percentage > 0.0:
-        ism_layer = ismNetworkingLayer.ISMNetworkingLayer(traci)
+        ism_layer = ismNetworkingLayer.ISMNetworkingLayer(sumo_facade.get_traci_instance())
     t = time.time()
     var_dump_file_name = time.strftime("%d%m%Y%H_%M_%S") + "_" + str(
         int(round(t * 1000))) + "_%i_%i_%i" % (
@@ -340,7 +341,7 @@ def run(config: str, parameter_index: int, iteration_counter: int, seed: float) 
             var_dump_file_name += "_%i" % (int(value))
     var_dump_file_name += "_%i" % iteration_counter
 
-    vehicle_fleet = fleetManager.FleetManager(traci, backend_server, v2v_layer, additional_vehicles, number_vehicles,
+    vehicle_fleet = fleetManager.FleetManager(fleet_adapter, backend_server, v2v_layer, additional_vehicles, number_vehicles,
                                               duration_parameter, ism_layer, v2v_device, wlan_device,
                                               wlan_heartbeat_strategy, v2v_heartbeat_strategy, heartbeat_encoding,
                                               v2v_heartbeat_interval, v2v_distance, v2v_data_rate, var_dump_file_name,
@@ -348,7 +349,7 @@ def run(config: str, parameter_index: int, iteration_counter: int, seed: float) 
                                               wlan_equipment_percentage)
 
     if wlan_device and wlan_equipment_percentage > 0.0:
-        wlan_manager = wlan_ap_manager.WlanAPManager(traci, wlan_ap_count, ism_layer, backend_server, buildings_tuple,
+        wlan_manager = wlan_ap_manager.WlanAPManager(sumo_facade.get_traci_instance(), wlan_ap_count, ism_layer, backend_server, buildings_tuple,
                                                      ap_placement, wlan_distance, wlan_beacon_interval, wlan_data_rate,
                                                      ap_coords, max_number_connections, wlan_ap_percentage, seed)
     generated_update = False
@@ -359,8 +360,8 @@ def run(config: str, parameter_index: int, iteration_counter: int, seed: float) 
     try:
         while (duration and step <= duration_parameter * 10) or (not duration and not finished):
 
-            traci.simulationStep()
-            current_time = traci.simulation.getTime()
+            sumo_facade.step()
+            current_time = sumo_facade.get_current_time()
 
             if not generated_update:
                 # size = 1000 * 1000 * 100  # 100 Megabyte
@@ -369,8 +370,8 @@ def run(config: str, parameter_index: int, iteration_counter: int, seed: float) 
                 update_names.append(filename)
                 update_data[filename] = [current_time, update_size, 1411]
 
-            vehicle_fleet.arrived(traci.simulation.getArrivedIDList())
-            vehicle_fleet.departed(traci.simulation.getDepartedIDList())
+            vehicle_fleet.arrived(sumo_facade.get_arrived_vehicles())
+            vehicle_fleet.departed(sumo_facade.get_departed_vehicles())
             if v2v_device and v2v_equipment_percentage > 0.0:
                 v2v_layer.simulation_step(current_time)
             if wlan_device and wlan_equipment_percentage > 0.0:
@@ -419,7 +420,7 @@ def run(config: str, parameter_index: int, iteration_counter: int, seed: float) 
                 os.remove(update_name + ".dat")
             if os.path.isfile(update_name + ".datmeta"):
                 os.remove(update_name + ".datmeta")
-        traci.close()
+        sumo_facade.close()
         end_time = time.time()
         with open(var_dump_file_name + "execution_time.txt", 'w') as f:
             f.write(str(end_time - start_time))

@@ -631,7 +631,7 @@ class Vehicle:
         colors = [round(i * 255) for i in rgba1]
         if x == 1.0:
             colors = [0, 0, 255, 255]
-        self.__traci.vehicle.setColor(self.__vehID, colors)
+        self.__sumo_interface.vehicle.setColor(self.__vehID, colors)
 
     def save_received_data_bulk(self, msg_list: List, backend=False) -> tuple:
         """
@@ -1114,8 +1114,8 @@ class Vehicle:
         self.__used_file_names = set()
         self.__initial_update_check = False
         self.__current_wlan_ap = None
-        self.__traci = fleet_manager.get_traci()
-        self.__step_length = self.__traci.simulation.getDeltaT()
+        self.__sumo_interface = fleet_manager.get_traci()
+        self.__step_length = self.__sumo_interface.simulation.getDeltaT()
         self.__packet_size = 1500  # byte
         self.__heartbeat_interval = self.__fleetManager.get_v2v_heartbeat_interval()  # 10.0  # seconds
         self.__lastv2vHeartbeat = - (random.random() * self.__heartbeat_interval)

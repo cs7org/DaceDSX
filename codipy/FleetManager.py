@@ -16,6 +16,13 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
 from Vehicle import Vehicle
+# Import SUMO interface adapters
+try:
+    from sumo_interface import FleetManagerAdapter, VehicleAdapter
+except ImportError:
+    # For backward compatibility if interface not available
+    FleetManagerAdapter = None
+    VehicleAdapter = None
 
 
 class FleetManager:
@@ -44,13 +51,19 @@ class FleetManager:
                 edge_from = self.__rng.choice(self.__edge_ids)
                 edge_to = self.__rng.choice(self.__edge_ids)
                 try:
-                    route = self.__traci.simulation.findRoute(edge_from, edge_to, "DEFAULT_VEHTYPE")
+                    if self.__fleet_adapter:
+                        route = self.__fleet_adapter.find_route(edge_from, edge_to, "DEFAULT_VEHTYPE")
+                    else:
+                        route = self.__traci.simulation.findRoute(edge_from, edge_to, "DEFAULT_VEHTYPE")
                 except:  # TraCI will throw an error if there is no route between the edges.
                     continue
-                if len(list(route.edges)) > 0:
+                if route and len(list(route.edges)) > 0:
                     # use random chars as strings, as route name has to be unique
                     route_name = ''.join(self.__rng.choices(string.ascii_uppercase + string.digits, k=20))
-                    self.__traci.route.add(route_name, list(route.edges))
+                    if self.__fleet_adapter:
+                        self.__fleet_adapter.add_route(route_name, list(route.edges))
+                    else:
+                        self.__traci.route.add(route_name, list(route.edges))
                     result_list.append(route_name)
                     break
         return result_list
@@ -111,17 +124,23 @@ class FleetManager:
             if ":" in edge_to or ":" in edge_from:
                 continue
             try:
-                route = self.__traci.simulation.findRoute(edge_from, edge_to, "DEFAULT_VEHTYPE")
+                if self.__fleet_adapter:
+                    route = self.__fleet_adapter.find_route(edge_from, edge_to, "DEFAULT_VEHTYPE")
+                else:
+                    route = self.__traci.simulation.findRoute(edge_from, edge_to, "DEFAULT_VEHTYPE")
             except:  # TraCI will throw an error if there is no route between the edges.
                 continue
-            if len(list(route.edges)) > 0:
+            if route and len(list(route.edges)) > 0:
                 # use random chars as strings, as route name has to be unique
                 route_name = ''.join(self.__rng.choices(string.ascii_uppercase + string.digits, k=20))
                 if len(edges) == 0:
                     edges.extend(route.edges)
                 else:
                     edges.extend(route.edges[1:])
-                self.__traci.route.add(route_name, list(route.edges))
+                if self.__fleet_adapter:
+                    self.__fleet_adapter.add_route(route_name, list(route.edges))
+                else:
+                    self.__traci.route.add(route_name, list(route.edges))
                 result_list.append(route_name)
                 added_travel_time += route.travelTime
                 last_end_edge = edge_to
@@ -137,8 +156,12 @@ class FleetManager:
         """
         Add an additional vehicle to the simulation.
         """
-        self.__traci.vehicle.add("randomVehicle%i" % self.__currentNumberOfAdditionalVehicles_index,
-                                 self.create_routes(1)[0])
+        route_name = self.create_routes(1)[0]
+        vehicle_id = "randomVehicle%i" % self.__currentNumberOfAdditionalVehicles_index
+        if self.__fleet_adapter:
+            self.__fleet_adapter.add_vehicle(vehicle_id, route_name)
+        else:
+            self.__traci.vehicle.add(vehicle_id, route_name)
         self.__currentNumberOfAdditionalVehicles += 1
         self.__currentNumberOfAdditionalVehicles_index += 1
 
@@ -153,7 +176,11 @@ class FleetManager:
         if self.__sumo_route is None:
             veh.set_routes(self.create_routes(self.__maximumNumberOfRoutes, veh.get_veh_id()))
             veh.set_scheduled()
-            self.__traci.vehicle.add("vehicle%i" % self.__currentNumberOfVehicles, veh.get_current_route())
+            vehicle_id = "vehicle%i" % self.__currentNumberOfVehicles
+            if self.__fleet_adapter:
+                self.__fleet_adapter.add_vehicle(vehicle_id, veh.get_current_route())
+            else:
+                self.__traci.vehicle.add(vehicle_id, veh.get_current_route())
         self.__currentNumberOfVehicles = self.__currentNumberOfVehicles + 1
 
     def get_backend_server(self):
@@ -184,13 +211,19 @@ class FleetManager:
         for veh in self.__allVehicles:
             if current_time >= veh.get_next_route_start() and not veh.is_scheduled() and not veh.is_on_road() and veh.has_next_route():
                 veh.set_scheduled()
-                self.__traci.vehicle.add(veh.get_veh_id(), veh.update_route())
+                if self.__fleet_adapter:
+                    self.__fleet_adapter.add_vehicle(veh.get_veh_id(), veh.update_route())
+                else:
+                    self.__traci.vehicle.add(veh.get_veh_id(), veh.update_route())
             if not veh.has_next_route() and not veh.is_on_road() and not veh.is_scheduled() and self.__duration:
                 veh.set_routes(self.create_routes(self.__maximumNumberOfRoutes, veh.get_veh_id()))
                 print("Simulation", self.__v2v_heartbeat_strategy, "Vehicle", veh.get_veh_id(), "on route",
                       veh.get_current_route(), "at", self.__current_time)
                 veh.set_scheduled()
-                self.__traci.vehicle.add(veh.get_veh_id(), veh.get_current_route())
+                if self.__fleet_adapter:
+                    self.__fleet_adapter.add_vehicle(veh.get_veh_id(), veh.get_current_route())
+                else:
+                    self.__traci.vehicle.add(veh.get_veh_id(), veh.get_current_route())
             if not veh.has_next_route() and not veh.is_on_road() and not veh.is_scheduled() and not self.__duration:
                 number_of_unfinished_vehicles -= 1
             if veh.is_on_road():
@@ -255,10 +288,15 @@ class FleetManager:
                 #
                 veh.set_departed(self.__current_time)
                 # Add a TraCI subscription for the vehicle
-                self.__traci.vehicle.subscribeContext(veh.get_veh_id(), self.__traci.constants.CMD_GET_VEHICLE_VARIABLE,
-                                                      self.__v2v_communicationDistance,
-                                                      [self.__traci.constants.VAR_SPEED,
-                                                       self.__traci.constants.VAR_POSITION])
+                if self.__fleet_adapter:
+                    self.__fleet_adapter.subscribe_vehicle_context(veh.get_veh_id(), self.__v2v_communicationDistance,
+                                                                  [self.__fleet_adapter.sumo_facade.get_traci_instance().constants.VAR_SPEED,
+                                                                   self.__fleet_adapter.sumo_facade.get_traci_instance().constants.VAR_POSITION])
+                else:
+                    self.__traci.vehicle.subscribeContext(veh.get_veh_id(), self.__traci.constants.CMD_GET_VEHICLE_VARIABLE,
+                                                          self.__v2v_communicationDistance,
+                                                          [self.__traci.constants.VAR_SPEED,
+                                                           self.__traci.constants.VAR_POSITION])
 
                 print(veh.get_veh_id(), "departed")
 
@@ -285,7 +323,10 @@ class FleetManager:
                 if self.__ismNetworkingLayer is not None and self.get_wlan_device(veh.get_veh_id()):
                     self.__ismNetworkingLayer.remove_vehicle(veh)
                 if self.__current_time is None:
-                    self.__current_time = self.__traci.simulation.getTime()
+                    if self.__fleet_adapter:
+                        self.__current_time = self.__fleet_adapter.get_current_time()
+                    else:
+                        self.__current_time = self.__traci.simulation.getTime()
                     veh.set_arrived(self.__current_time)
                 else:
                     veh.set_arrived(self.__current_time)
@@ -303,10 +344,15 @@ class FleetManager:
 
     def get_traci(self):
         """
-        Get the TraCI interface
-        @return TraCI object
+        Get the SUMO interface (VehicleAdapter or legacy TraCI for backward compatibility)
+        @return VehicleAdapter when using new interface, or legacy TraCI object
         """
-        return self.__traci
+        if self.__fleet_adapter and VehicleAdapter:
+            # Return vehicle adapter for new interface
+            return VehicleAdapter(self.__fleet_adapter.sumo_facade)
+        else:
+            # Return legacy TraCI for backward compatibility
+            return self.__traci
 
     def get_v2v_device(self, veh_id: str) -> bool:
         """
@@ -428,13 +474,19 @@ class FleetManager:
         for veh in self.__allVehicles:
             if current_time >= veh.get_next_route_start() and not veh.is_scheduled() and not veh.is_on_road() and veh.has_next_route():
                 veh.set_scheduled()
-                self.__traci.vehicle.add(veh.get_veh_id(), veh.update_route())
+                if self.__fleet_adapter:
+                    self.__fleet_adapter.add_vehicle(veh.get_veh_id(), veh.update_route())
+                else:
+                    self.__traci.vehicle.add(veh.get_veh_id(), veh.update_route())
             if not veh.has_next_route() and not veh.is_on_road() and not veh.is_scheduled() and self.__duration:
                 veh.set_routes(self.create_routes(self.__maximumNumberOfRoutes, veh.get_veh_id()))
                 print("Simulation", self.__v2v_heartbeat_strategy, "Vehicle", veh.get_veh_id(), "on route",
                       veh.get_current_route(), "at", self.__current_time)
                 veh.set_scheduled()
-                self.__traci.vehicle.add(veh.get_veh_id(), veh.get_current_route())
+                if self.__fleet_adapter:
+                    self.__fleet_adapter.add_vehicle(veh.get_veh_id(), veh.get_current_route())
+                else:
+                    self.__traci.vehicle.add(veh.get_veh_id(), veh.get_current_route())
             if not veh.has_next_route() and not veh.is_on_road() and not veh.is_scheduled() and not self.__duration or veh.update_done():
                 self.__number_of_unfinished_vehicles -= 1
             if veh.is_on_road():
@@ -462,7 +514,7 @@ class FleetManager:
         """
         return self.__plot_real_time, self.__plot_times, self.__plot_values
 
-    def __init__(self, traci: object, backend_server: object, v2v_layer: V2VNetworkingLayer, additional_vehicle: int,
+    def __init__(self, fleet_adapter, backend_server: object, v2v_layer: V2VNetworkingLayer, additional_vehicle: int,
                  number_vehicle: int, number_routes: int, ismNetworkingLayer_var: ismNetworkingLayer.ISMNetworkingLayer,
                  v2v_device: bool, wlan_device: bool,
                  wlan_heartbeat_strategy: str, v2v_heartbeat_strategy: str, heartbeat_encoding: str,
@@ -472,7 +524,8 @@ class FleetManager:
                  wlan_equipment_percentage: float = 100.0) -> None:
         """
         Generate a FleetManager object
-        @param traci TraCI interface
+        @param fleet_adapter FleetManagerAdapter interface (or legacy TraCI for backward compatibility)
+        @param backend_server A Backend object
         @param backend_server A Backend object
         @param v2v_layer The V2V Networking Layer
         @param additional_vehicle Number of additional vehicles
@@ -495,7 +548,16 @@ class FleetManager:
         @param sumo_route Sumo routes
 
         """
-        self.__traci = traci
+        # Handle both new adapter and legacy TraCI for backward compatibility
+        if FleetManagerAdapter and hasattr(fleet_adapter, 'sumo_facade'):
+            # New adapter interface
+            self.__fleet_adapter = fleet_adapter
+            self.__traci = fleet_adapter.sumo_facade.get_traci_instance()  # For legacy compatibility
+        else:
+            # Legacy TraCI interface
+            self.__traci = fleet_adapter  # fleet_adapter is actually TraCI in legacy mode
+            self.__fleet_adapter = None
+            
         self.__numberOfAdditionalVehicles = additional_vehicle
         self.__numberOfVehicles = number_vehicle
         self.__v2v_communicationDistance = v2v_communication_distance
@@ -522,8 +584,15 @@ class FleetManager:
         self.__backendServer = backend_server
         self.__v2v_layer = v2v_layer
         self.__ismNetworkingLayer = ismNetworkingLayer_var
-        self.__current_time = self.__traci.simulation.getTime()
-        self.__edge_ids = self.__traci.edge.getIDList()
+        
+        # Use adapter methods when available, fall back to TraCI for legacy compatibility
+        if self.__fleet_adapter:
+            self.__current_time = self.__fleet_adapter.get_current_time()
+            self.__edge_ids = self.__fleet_adapter.get_edge_list()
+        else:
+            self.__current_time = self.__traci.simulation.getTime()
+            self.__edge_ids = self.__traci.edge.getIDList()
+            
         self.__sumo_route = sumo_route
         self.__v2v_equipment_percentage = v2v_equipment_percentage
         self.__wlan_equipment_percentage = wlan_equipment_percentage

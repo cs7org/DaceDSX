@@ -4,7 +4,7 @@
 # $2: simulator id
 
 #get SUMODIR and cd into
-BIN="./SumoWrapper"
+BIN="../SumoWrapper/SumoWrapper"
 SCENARIOID=$1
 SIMID=$2
 BASEDIR="../SumoWrapper"
@@ -27,7 +27,7 @@ cd $BASEDIR
 echo "now in $PWD"
 
    #gnome-terminal -- bash -c "gdb --args $BIN $SCENARIOID $SUMOID; sleep 100"
-   declare -x LD_LIBRARY_PATH="../CppBaseWrapper/build"
+   declare -x LD_LIBRARY_PATH="../CppBaseWrapper/lib"
 
    #$BIN $SCENARIOID $SIMID 2>&1 | tee $LOGFILE
     gnome-terminal --tab -e "bash -ic  \" printf '\e]2;$SIMID\a'; $BIN $SCENARIOID $SIMID 2>&1 | tee $LOGFILE; sleep 100000\""

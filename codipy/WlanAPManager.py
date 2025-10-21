@@ -19,53 +19,40 @@ class WlanAPManager:
     """
     def place_aps(self):
         """
-        Places WLAN APs as POIs in the SUMO simulation
+        Places WLAN APs (passive mode: pre-configured coordinates only)
         """
         if self.__ap_placement == 4:
+            # PASSIVE MODE: Use register_poi() instead of poi.add()
             for coords in self.__ap_coords:
                 ap_id = "wlan_ap_%i" % self.__current_number_aps
-                print(ap_id, coords[0], coords[1], (0xff, 0x0, 0x0, 0xff), "wlan", 3)
-                self.__traci.poi.add(ap_id, coords[0], coords[1], (0xff, 0x0, 0x0, 0xff))#, "wlan", 3)
+                print(f"Registering AP: {ap_id} at ({coords[0]}, {coords[1]}) range={coords[2]}m")
+                
+                # Register POI with passive TraCI interface
+                self.__traci.register_poi(
+                    ap_id,
+                    {"x": coords[0], "y": coords[1]},
+                    coords[2]  # communication_range
+                )
+                
                 ap = wlanAP.WlanAP(ap_id, coords[0], coords[1], coords[2], self.__traci,
                                    self.__beacon_interval,
                                    self.__backend, self.__wlan_data_rate, self.__max_number_connections)
                 self.__ism_layer.add_wlan_ap(ap)
                 self.__current_number_aps += 1
             return
-        for ap in range(self.__number_of_aps):
-            if self.__ap_placement == 3:
-                x = self.__rng.uniform(self.__minXBound, self.__maxXBound)
-                y = self.__rng.uniform(self.__minYBound, self.__maxYBound)
-                ap_id = "wlan_ap_%i" % self.__current_number_aps
-                self.__traci.poi.add(ap_id, x, y, (0xff, 0x0, 0x0, 0xff), "wlan", 3)
-                ap = wlanAP.WlanAP(ap_id, x, y, self.__communication_distance, self.__traci, self.__beacon_interval,
-                                   self.__backend, self.__wlan_data_rate, self.__max_number_connections)
-                self.__ism_layer.add_wlan_ap(ap)
-                self.__current_number_aps += 1
-                continue
-            if self.__ap_placement == 0 or self.__ap_placement == 2:
-                random_building = self.__rng.choices(self.__building_id_list, weights=self.__building_area_list)
-            if self.__ap_placement == 1:
-                inverse_weights = []
-                for element in self.__building_area_list:
-                    inverse_weights.append(float(1/element))
-                random_building = self.__rng.choices(self.__building_id_list, weights=inverse_weights)
-            building_shape = self.__traci.polygon.getShape(random_building[0])
-            building_polygon = Polygon(building_shape)
-            minx, miny, maxx, maxy = building_polygon.bounds
-            result_point = None
-            while True:
-                pnt = Point(self.__rng.uniform(minx, maxx), self.__rng.uniform(miny, maxy))
-                if building_polygon.contains(pnt):
-                    result_point = pnt
-                    break
-            x = result_point.x
-            y = result_point.y
-            ap_id = "wlan_ap_%i" % self.__current_number_aps
-            self.__traci.poi.add(ap_id, x, y, (0xff, 0x0, 0x0, 0xff), "wlan", 3)
-            ap = wlanAP.WlanAP(ap_id, x, y, self.__communication_distance, self.__traci, self.__beacon_interval, self.__backend, self.__wlan_data_rate, self.__max_number_connections)
-            self.__ism_layer.add_wlan_ap(ap)
-            self.__current_number_aps += 1
+        
+        # PASSIVE MODE: Only pre-configured mode (4) is supported
+        # Random placement modes (0-3) require active TraCI for poi.add() and polygon.getShape()
+        raise ValueError(
+            f"Passive mode only supports pre-configured AP placement (ap_placement='coords', mode=4). "
+            f"Current mode: {self.__ap_placement}. "
+            f"Please provide ap_coords parameter with pre-configured coordinates."
+        )
+        
+        # OLD ACTIVE MODE CODE - DISABLED IN PASSIVE MODE
+        # Removed: Random placement (mode 3), building-based placement (modes 0-2)
+        # These required active TraCI APIs: poi.add(), polygon.getShape(), simulation.getNetBoundary()
+        # Passive mode only supports pre-configured coordinates (mode 4)
 
 
 
@@ -85,7 +72,13 @@ class WlanAPManager:
         self.__rng = random.Random()
         self.__rng.seed(seed)
         self.__seed = seed
-        bounds = traci.simulation.getNetBoundary()
+        
+        # PASSIVE MODE: Removed traci.simulation.getNetBoundary() call
+        # Boundaries only needed for random placement modes (0-3)
+        # Passive mode uses pre-configured mode (mode 4) only
+        # If random placement ever needed, get bounds from config
+        bounds = ((0, 0), (0, 0))  # Placeholder - not used in passive mode
+        
         if self.__wlan_ap_percentage != 100.0:
             self.__ap_coords = self.__rng.sample(list(ap_coords), math.ceil((self.__wlan_ap_percentage/100.0) * len(list(ap_coords))))
         else:

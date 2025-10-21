@@ -1,0 +1,59 @@
+{
+  "scenarioID": "erlangen",
+  "domainReferences": {
+  },
+  "simulationStart": 0,
+  "simulationEnd": 10000,
+  "execution": {
+    "randomSeed": 23,
+    "constraints": "",
+    "priority": 0,
+    "syncedParticipants": 2
+  },
+  "buildingBlocks": [
+    {
+      "instanceID": "SumoWrapper0",
+      "type": "SumoWrapper",
+      "layer": "micro",
+      "domain": "traffic",
+      "stepLength": 1000,
+      "parameters": {},
+      "resources": {
+        "manhattengrid.net.xml": "RoadMap",
+        "manhatten.rou.xml": "Traffic",
+        "InTAS.poly.xml": "Additional"
+      },
+      "results": {},
+      "synchronized": true,
+      "isExternal": false,
+      "responsibilities": [],
+      "observers": [
+        {
+          "task": "publish",
+          "element": "vehicle",
+          "filter": "",
+          "period": 1,
+          "trigger": "",
+          "type": "avro"
+        }
+      ]
+    },
+      {
+      "instanceID": "CodipyWrapper2",
+      "type": "CodipyWrapper",
+      "layer": "micro",
+      "domain": "traffic",
+      "stepLength": 1000,
+      "isExternal":false,
+      "parameters": {},
+      "resources": {},
+      "results": {},
+      "synchronized": true,
+      "responsibilities": [],
+      "observers": [],
+      "customparams": ""
+    }
+  ],
+  "translators": [],
+  "projectors": []
+}

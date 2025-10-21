@@ -3,12 +3,12 @@
   "domainReferences": {
   },
   "simulationStart": 0,
-  "simulationEnd": 1000,
+  "simulationEnd": 10000,
   "execution": {
     "randomSeed": 23,
     "constraints": "",
     "priority": 0,
-    "syncedParticipants": 1
+    "syncedParticipants": 2
   },
   "buildingBlocks": [
     {
@@ -27,7 +27,31 @@
       "synchronized": true,
       "isExternal": false,
       "responsibilities": [],
-      "observers": []
+      "observers": [
+        {
+          "task": "publish",
+          "element": "vehicle",
+          "filter": "",
+          "period": 1,
+          "trigger": "",
+          "type": "avro"
+        }
+      ]
+    },
+      {
+      "instanceID": "CodipyWrapper2",
+      "type": "CodipyWrapper",
+      "layer": "micro",
+      "domain": "traffic",
+      "stepLength": 1000,
+      "isExternal":false,
+      "parameters": {},
+      "resources": {},
+      "results": {},
+      "synchronized": true,
+      "responsibilities": [],
+      "observers": [],
+      "customparams": ""
     }
   ],
   "translators": [],

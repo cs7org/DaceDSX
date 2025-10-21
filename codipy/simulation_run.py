@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 import getopt
 import os
 import sys
@@ -14,53 +14,55 @@ import WlanAPManager as wlan_ap_manager
 import traceback
 import random
 import parameter_parser
-from sumo_interface import SumoFacade, FleetManagerAdapter
+from TraCInterface import TraCIInterface, register_access_points_from_file
+from CodipyWrapper.CodipyWrapper import CodipyWrapper
 
-from sumo_interface import SumoFacade
 
-
-def parse_options(argv: List[str]) -> tuple[str, int, int, float]:  # parse multiple logfiles, put plots, calculated
-    # values and traces in new directory
+def parse_options(argv: List[str]) -> Tuple[str, str, str]:
     """
-    Parse command line options.
-    @param argv List of command line arguments
-    @return index in parameter variation, iteration
+    Parse command line options for passive-mode operation.
+    
+    Args:
+        argv: List of command line arguments
+        
+    Returns:
+        Tuple of (config_file_path, scenario_id, instance_id)
     """
-    usage = 'usage: simulation_run.py [-h | --help] [-c | --config<str>] [-p | --parameter_index<number>] [-i | ' \
-            '--iteration=<number>] [-s | --seed=<number>]' + '\n' + \
-            'Parameter runs'
-    parameter_index = None
-    iteration_arg = None
-    seed_arg = 0
+    usage = 'usage: simulation_run.py [-h | --help] [-c | --config=<str>] [-s | --scenario=<str>] [-i | --instance=<str>]\n' \
+            'Passive Mode CoDiPy Runtime'
     config_arg = None
+    scenario_arg = None
+    instance_arg = None
 
     try:
         if len(argv) == 0:
             raise getopt.GetoptError("No input arguments")
-        opts, args = getopt.getopt(argv, "hc:p:i:s:", ["help", "config=", "parameter_index=", "iteration=", "seed="])
+        opts, args = getopt.getopt(argv, "hc:s:i:", ["help", "config=", "scenario=", "instance="])
         if len(opts) == 0:
             raise getopt.GetoptError("No option specified")
         for opt, arg in opts:
             if opt in ("-h", "--help"):
                 print(usage)
                 sys.exit()
-            elif opt in ("-p", "--parameter_index"):
-                parameter_index = arg
-            elif opt in ("-i", "--iteration"):
-                iteration_arg = arg
-            elif opt in ("-s", "--seed"):
-                seed_arg = arg
             elif opt in ("-c", "--config"):
                 config_arg = arg
+            elif opt in ("-s", "--scenario"):
+                scenario_arg = arg
+            elif opt in ("-i", "--instance"):
+                instance_arg = arg
 
-    except getopt.GetoptError:
+    except getopt.GetoptError as e:
+        print(f"Error: {e}")
         print(usage)
         sys.exit(2)
-    if parameter_index is None or iteration_arg is None or config_arg is None:
+        
+    if config_arg is None or scenario_arg is None or instance_arg is None:
+        print("Error: All arguments (--config, --scenario, --instance) are required")
         print(usage)
         sys.exit(2)
+        
     config_arg = os.path.abspath(config_arg)
-    return str(config_arg), int(parameter_index), int(iteration_arg), float(seed_arg)
+    return str(config_arg), str(scenario_arg), str(instance_arg)
 
 
 def get_data_rate(communication_standard: str, mcs: int, dcm: bool = False) -> float:
@@ -274,25 +276,40 @@ def calculate_communication_range(transmission_power: float, gain: int, noisepow
     return round(communication_range)
 
 
-def run(config: str, parameter_index: int, iteration_counter: int, seed: float) -> None:
+def run_passive(config: str, scenario_id: str, instance_id: str) -> None:
     """
-    Run a single simulation run.
-    @param config File path to the configuration file
-    @param parameter_index Index in the parameter list
-    @param iteration_counter Number of iteration
-    @param seed The random seed value
+    Run CoDiPy in passive mode - consumes vehicle telemetry from Kafka.
+    
+    Args:
+        config: File path to the configuration file
+        scenario_id: Scenario identifier (for Kafka topics)
+        instance_id: Instance identifier (for Kafka consumer group)
     """
+    print(f"Starting CoDiPy in PASSIVE MODE")
+    print(f"   Scenario ID: {scenario_id}")
+    print(f"   Instance ID: {instance_id}")
+    print(f"   Config: {config}")
+    print("-" * 60)
+    
     start_time = time.time()
-    random.seed(seed)
-    sumo_cfg, sumo_binary, number_vehicles, additional_vehicles, update_size, initial_seeds, v2v_distance, duration, \
-        duration_parameter, output_abs_path, buildings_tuple, ap_placement, v2v_device, wlan_device, wlan_distance, \
-        wlan_beacon_interval, v2v_heartbeat_interval, wlan_ap_count, wlan_heartbeat_strategy, v2v_heartbeat_strategy, \
-        heartbeat_encoding, v2v_data_rate, wlan_data_rate, seeding_strategy, parameters, sumo_route, \
-        communication_standard, mcs, additional_attenuation, ap_coords, max_number_connections, \
-        v2v_equipment_percentage, wlan_equipment_percentage, wlan_ap_percentage \
-        = parameter_parser.parse_parameter_xml(config, parameter_index)
-    gain, transmission_power, pathloss, noisepower, loss_exponent, antenna_height, two_ray, log_distance, \
-        log_shadow, shadow_slope, loss_exponent2, sigma, sigma2 = parameter_parser.parse_constants_xml(config)
+    
+    # Parse configuration (use parameter_index=0 for default parameters)
+    parameter_index = 0
+    try:
+        sumo_cfg, sumo_binary, number_vehicles, additional_vehicles, update_size, initial_seeds, v2v_distance, duration, \
+            duration_parameter, output_abs_path, buildings_tuple, ap_placement, v2v_device, wlan_device, wlan_distance, \
+            wlan_beacon_interval, v2v_heartbeat_interval, wlan_ap_count, wlan_heartbeat_strategy, v2v_heartbeat_strategy, \
+            heartbeat_encoding, v2v_data_rate, wlan_data_rate, seeding_strategy, parameters, sumo_route, \
+            communication_standard, mcs, additional_attenuation, ap_coords, max_number_connections, \
+            v2v_equipment_percentage, wlan_equipment_percentage, wlan_ap_percentage \
+            = parameter_parser.parse_parameter_xml(config, parameter_index)
+        gain, transmission_power, pathloss, noisepower, loss_exponent, antenna_height, two_ray, log_distance, \
+            log_shadow, shadow_slope, loss_exponent2, sigma, sigma2 = parameter_parser.parse_constants_xml(config)
+    except Exception as e:
+        print(f"Failed to parse configuration: {e}")
+        raise
+    
+    # Calculate communication range if standard is specified
     loss_exponent += additional_attenuation
     if communication_standard != "n/a":
         distance = calculate_communication_range(transmission_power, gain, noisepower, pathloss, loss_exponent,
@@ -301,135 +318,250 @@ def run(config: str, parameter_index: int, iteration_counter: int, seed: float) 
         v2v_distance = distance
         v2v_data_rate = data_rate
     else:
-        distance = None
-        data_rate = None
+        distance = v2v_distance
+        data_rate = v2v_data_rate
+    
+    # Create output directory
     pathlib.Path(output_abs_path).mkdir(parents=True, exist_ok=True)
     os.chdir(output_abs_path)
     
-    # Initialize SUMO interface
-    sumo_facade = SumoFacade()
-    sumo_facade.initialize_and_start(sumo_binary, sumo_cfg, seed)
+    print(f"Configuration loaded:")
+    print(f"   V2V distance: {v2v_distance}m")
+    print(f"   WLAN distance: {wlan_distance}m")
+    print(f"   Number of vehicles: {number_vehicles}")
+    print(f"   WLAN AP count: {wlan_ap_count}")
+    print(f"   AP coordinates file: {ap_coords}")
+    print("-" * 60)
     
-    # Create adapter for FleetManager
-    fleet_adapter = FleetManagerAdapter(sumo_facade)
+    # Step length from config (default 0.1 seconds)
+    step_length = 0.1
     
-    step = 0
-    # chunk_size = 1411
-    backend_server = Backend.Backend(1411, initial_seeds, number_vehicles, seeding_strategy)
+    # Initialize CodipyWrapper (passive data pipeline)
+    print("Initializing CodipyWrapper...")
+    try:
+        wrapper = CodipyWrapper(
+            scenarioID=scenario_id,
+            instanceID=instance_id,
+            step_length_seconds=step_length
+        )
+        wrapper.prepare()
+        print("CodipyWrapper initialized and connected to Kafka")
+    except Exception as e:
+        print(f"Failed to initialize CodipyWrapper: {e}")
+        raise
+    
+    # Get TraCIInterface from wrapper
+    traci_interface = wrapper.traci_interface
+    
+    # Register Access Points if configured
+    if wlan_device and wlan_equipment_percentage > 0.0 and ap_coords:
+        print(f"Registering WLAN Access Points from {ap_coords}...")
+        try:
+            ap_count = register_access_points_from_file(traci_interface, ap_coords)
+            print(f"Registered {ap_count} access points")
+        except Exception as e:
+            print(f"Failed to register access points: {e}")
+            print("   Continuing without access points...")
+    
+    # Initialize Backend server
+    # Estimated vehicle count for seeding (hint only, not enforced)
+    estimated_vehicles = number_vehicles if number_vehicles > 0 else 36  # Default estimate
+    backend_server = Backend.Backend(1411, initial_seeds, estimated_vehicles, seeding_strategy)
+    print(f"Backend server initialized (estimated vehicles for seeding: {estimated_vehicles})")
+    
+    # Initialize networking layers
     v2v_layer = None
     ism_layer = None
+    
     if v2v_device and v2v_equipment_percentage > 0.0:
-        v2v_layer = v2vNetworkingLayer.V2VNetworkingLayer(sumo_facade.get_traci_instance(), distance, data_rate,
-                                                          gain, transmission_power,
-                                                          pathloss, noisepower, loss_exponent, antenna_height,
-                                                          two_ray, log_distance,
-                                                          log_shadow, shadow_slope, loss_exponent2, sigma, sigma2
-                                                          )
-
+        print(f"Initializing V2V networking layer (range: {v2v_distance}m)...")
+        v2v_layer = v2vNetworkingLayer.V2VNetworkingLayer(
+            traci_interface, distance, data_rate,
+            gain, transmission_power,
+            pathloss, noisepower, loss_exponent, antenna_height,
+            two_ray, log_distance,
+            log_shadow, shadow_slope, loss_exponent2, sigma, sigma2
+        )
+        print("V2V layer initialized")
+    
     if wlan_device and wlan_equipment_percentage > 0.0:
-        ism_layer = ismNetworkingLayer.ISMNetworkingLayer(sumo_facade.get_traci_instance())
+        print(f"Initializing WLAN/ISM networking layer (range: {wlan_distance}m)...")
+        ism_layer = ismNetworkingLayer.ISMNetworkingLayer(traci_interface)
+        print("WLAN/ISM layer initialized")
+    
+    # Generate output filenames
     t = time.time()
-    var_dump_file_name = time.strftime("%d%m%Y%H_%M_%S") + "_" + str(
-        int(round(t * 1000))) + "_%i_%i_%i" % (
-                             additional_vehicles, number_vehicles, duration_parameter)
-    for value in parameters:
-        if type(value) is float:
-            var_dump_file_name += "_%i" % (int(value * 100))
-        elif type(value) is str:
-            var_dump_file_name += "_" + value.replace(' ', '_')
-        else:
-            var_dump_file_name += "_%i" % (int(value))
-    var_dump_file_name += "_%i" % iteration_counter
-
-    vehicle_fleet = fleetManager.FleetManager(fleet_adapter, backend_server, v2v_layer, additional_vehicles, number_vehicles,
-                                              duration_parameter, ism_layer, v2v_device, wlan_device,
-                                              wlan_heartbeat_strategy, v2v_heartbeat_strategy, heartbeat_encoding,
-                                              v2v_heartbeat_interval, v2v_distance, v2v_data_rate, var_dump_file_name,
-                                              duration, wlan_distance, seed, sumo_route, v2v_equipment_percentage,
-                                              wlan_equipment_percentage)
-
+    var_dump_file_name = time.strftime("%d%m%Y%H_%M_%S") + "_" + str(int(round(t * 1000)))
+    var_dump_file_name += f"_{scenario_id}_{instance_id}"
+    
+    # Initialize FleetManager
+    print("Initializing FleetManager...")
+    # Set number_vehicles=0 to signal passive mode (prevents vehicle spawning)
+    vehicle_fleet = fleetManager.FleetManager(
+        traci_interface, backend_server, v2v_layer, additional_vehicles, 
+        0,  # number_vehicle=0 (passive mode)
+        0,  # number_routes=0 (passive mode)
+        ism_layer, v2v_device, wlan_device,
+        wlan_heartbeat_strategy, v2v_heartbeat_strategy, heartbeat_encoding,
+        v2v_heartbeat_interval, v2v_distance, v2v_data_rate, var_dump_file_name,
+        duration, wlan_distance, 1.0, sumo_route, v2v_equipment_percentage,
+        wlan_equipment_percentage
+    )
+    print("FleetManager initialized (passive mode: dynamic vehicle count)")
+    
+    # Initialize WLAN AP Manager (if enabled)
+    wlan_manager = None
     if wlan_device and wlan_equipment_percentage > 0.0:
-        wlan_manager = wlan_ap_manager.WlanAPManager(sumo_facade.get_traci_instance(), wlan_ap_count, ism_layer, backend_server, buildings_tuple,
-                                                     ap_placement, wlan_distance, wlan_beacon_interval, wlan_data_rate,
-                                                     ap_coords, max_number_connections, wlan_ap_percentage, seed)
+        print("Initializing WLAN AP Manager...")
+        wlan_manager = wlan_ap_manager.WlanAPManager(
+            traci_interface, wlan_ap_count, ism_layer, backend_server, buildings_tuple,
+            ap_placement, wlan_distance, wlan_beacon_interval, wlan_data_rate,
+            ap_coords, max_number_connections, wlan_ap_percentage, 0
+        )
+        print("WLAN AP Manager initialized")
+    
+    print("-" * 60)
+    print("All components initialized successfully!")
+    print("Starting passive monitoring loop...")
+    print("Press Ctrl+C to stop")
+    print("-" * 60)
+    
+    # Start wrapper (non-blocking - starts Kafka consumer in background)
+    wrapper.start()
+    
+    # Passive monitoring loop
+    step = 0
     generated_update = False
-    finished = False
     update_data = {}
     update_names = []
     connected_vehicles = []
+    status_interval = 100  # Print status every N steps
+    
     try:
-        while (duration and step <= duration_parameter * 10) or (not duration and not finished):
-
-            sumo_facade.step()
-            current_time = sumo_facade.get_current_time()
-
+        # Main simulation loop
+        while True:
+            # Advance wrapper one step (processes Kafka messages)
+            should_continue = wrapper.step()
+            
+            if not should_continue:
+                print("\nSimulation time limit reached")
+                break
+            
+            # Get current simulation time from TraCI interface
+            current_time = traci_interface.simulation.getTime()
+            
+            # Generate update file on first step
             if not generated_update:
-                # size = 1000 * 1000 * 100  # 100 Megabyte
-                filename = backend_server.generate_update(update_size)  # 100 Megabyte
+                filename = backend_server.generate_update(update_size)
                 generated_update = True
                 update_names.append(filename)
                 update_data[filename] = [current_time, update_size, 1411]
-
-            vehicle_fleet.arrived(sumo_facade.get_arrived_vehicles())
-            vehicle_fleet.departed(sumo_facade.get_departed_vehicles())
+            
+            # Process arrivals and departures
+            vehicle_fleet.arrived(traci_interface.simulation.getArrivedIDList())
+            vehicle_fleet.departed(traci_interface.simulation.getDepartedIDList())
+            
+            # Update networking layers
             if v2v_device and v2v_equipment_percentage > 0.0:
                 v2v_layer.simulation_step(current_time)
             if wlan_device and wlan_equipment_percentage > 0.0:
                 connected_vehicles.extend(ism_layer.simulation_step(current_time))
+            
+            # Update vehicle fleet
             finished = vehicle_fleet.update(current_time)
-
+            
+            # Print status periodically
+            if step % status_interval == 0:
+                active_count = len(traci_interface.vehicles)
+                print(f"Step {step:5d} | Time: {current_time:7.2f}s | Active vehicles: {active_count:3d}")
+            
             step += 1
-
-        with open("plotdata.txt", 'w', newline='') as r_file:
-            writer = csv.writer(r_file)
-            a, b, c = vehicle_fleet.get_plot_data()
-            writer.writerow(a)
-            writer.writerow(b)
-            writer.writerow(c)
-
-
+            
+    except KeyboardInterrupt:
+        print("\nReceived interrupt signal, shutting down...")
     except Exception as e:
-        print("Unexpected error:", sys.exc_info()[0])
-        print(e)
-        traceback.print_tb(sys.exc_info()[2])
-    else:
-        with open(var_dump_file_name + '_update_data', 'w', newline='') as r_file:
-            writer = csv.writer(r_file)
-            writer.writerow(update_data.keys())
-            writer.writerow(update_data.values())
-        result_data = vehicle_fleet.get_used_file_names()
-        result_file_name = 'results_%i_%i_%i' % (
-            additional_vehicles, number_vehicles, duration_parameter)
-        for value in parameters:
-            if type(value) is float:
-                result_file_name += "_%i" % (int(value * 100))
-            elif type(value) is str:
-                result_file_name += "_" + value.replace(' ', '_')
-            else:
-                result_file_name += "_%i" % (int(value))
-        result_file_name += "_%i.csv" % iteration_counter
-        with open(result_file_name, 'w', newline='') as r_file:
-            writer = csv.writer(r_file)
-            for element in result_data.values():
-                for string in element:
-                    writer.writerow([string])
-            writer.writerow([var_dump_file_name + '_update_data'])
-
+        print(f"\nUnexpected error: {e}")
+        traceback.print_exc()
+    finally:
+        # Cleanup
+        print("\nCleaning up resources...")
+        wrapper.stop()
+        time.sleep(0.5)
+        print("Resources cleaned up")
+        print("\nSaving results...")
+        
+        # Save plot data
+        try:
+            with open("plotdata.txt", 'w', newline='') as r_file:
+                writer = csv.writer(r_file)
+                a, b, c = vehicle_fleet.get_plot_data()
+                writer.writerow(a)
+                writer.writerow(b)
+                writer.writerow(c)
+            print("Plot data saved")
+        except Exception as e:
+            print(f"Failed to save plot data: {e}")
+        
+        try:
+            result_data = vehicle_fleet.get_used_file_names()
+            result_file_name = 'results_%i_%i_%i.csv' % (additional_vehicles, number_vehicles, duration_parameter)
+            with open(result_file_name, 'w', newline='') as r_file:
+                writer = csv.writer(r_file)
+                for element in result_data.values():
+                    for string in element:
+                        writer.writerow([string])
+                writer.writerow([var_dump_file_name + '_update_data'])
+            print(f"Results CSV saved to {result_file_name}")
+        except Exception as e:
+            print(f"Failed to save results CSV: {e}")
+            traceback.print_exc()
+        
+        # Save update data
+        try:
+            with open(var_dump_file_name + '_update_data', 'w', newline='') as r_file:
+                writer = csv.writer(r_file)
+                writer.writerow(update_data.keys())
+                writer.writerow(update_data.values())
+            print("Update data saved")
+        except Exception as e:
+            print(f"Failed to save update data: {e}")
+        
+        # Cleanup update files
         for update_name in update_names:
-            if os.path.isfile(update_name + ".dat"):
-                os.remove(update_name + ".dat")
-            if os.path.isfile(update_name + ".datmeta"):
-                os.remove(update_name + ".datmeta")
-        sumo_facade.close()
+            try:
+                if os.path.isfile(update_name + ".dat"):
+                    os.remove(update_name + ".dat")
+                if os.path.isfile(update_name + ".datmeta"):
+                    os.remove(update_name + ".datmeta")
+            except Exception as e:
+                print(f"Failed to cleanup {update_name}: {e}")
+        
         end_time = time.time()
-        with open(var_dump_file_name + "execution_time.txt", 'w') as f:
-            f.write(str(end_time - start_time))
-
-        with open(var_dump_file_name + "wlan_ap_connections.txt", 'w') as f:
-            for element in connected_vehicles:
-                f.write(str(element[0]) + " " + str(element[1]) + " " + str(element[2]) + "\n")
+        duration_seconds = end_time - start_time
+        
+        try:
+            with open(var_dump_file_name + "execution_time.txt", 'w') as f:
+                f.write(str(duration_seconds))
+            print(f"Execution time saved: {duration_seconds:.2f} seconds")
+        except Exception as e:
+            print(f"Failed to save execution time: {e}")
+        
+        try:
+            with open(var_dump_file_name + "wlan_ap_connections.txt", 'w') as f:
+                for element in connected_vehicles:
+                    f.write(str(element[0]) + " " + str(element[1]) + " " + str(element[2]) + "\n")
+            print("WLAN connection data saved")
+        except Exception as e:
+            print(f"Failed to save WLAN connection data: {e}")
+        
+        print("-" * 60)
+        print(f"CoDiPy passive mode completed")
+        print(f"   Total runtime: {duration_seconds:.2f} seconds")
+        print(f"   Total steps: {step}")
+        print(f"   Output directory: {output_abs_path}")
+        print("-" * 60)
 
 
 if __name__ == "__main__":
-    config, par_index, iteration, seed = parse_options(sys.argv[1:])
-    run(config, par_index, iteration, seed)
+    config, scenario_id, instance_id = parse_options(sys.argv[1:])
+    run_passive(config, scenario_id, instance_id)

@@ -1,6 +1,7 @@
 from typing import List
 from MessageType import *
 import struct
+import csv
 
 
 class V2VModuleVehicle:

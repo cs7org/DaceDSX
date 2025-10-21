@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE network SYSTEM "http://www.matsim.org/files/dtd/network_v1.dtd">
+
+<network name="NAME">
+   <nodes>
+      <node id="31219920" x="1174.30" y="4691.91"/>
+      <node id="31219921" x="1051.50" y="5325.42"/>
+      <node id="31219922" x="937.08" y="5989.78"/>
+      <node id="1475350055" x="449.71" y="13457.96"/>
+      <node id="1475350057" x="344.21" y="13695.89"/>
+      <node id="1475350058" x="212.50" y="13824.12"/>
+      <node id="15848360" x="22.47" y="14316.36"/>
+      <node id="1618588414" x="1415.26" y="3264.30"/>
+      <node id="1618588415" x="1439.65" y="3224.46"/>
+      <node id="2139163501" x="264.87" y="14383.32"/>
+      <node id="21607269" x="10.29" y="14332.20"/>
+      <node id="21607745" x="342.50" y="13377.23"/>
+      <node id="2219600162" x="335.01" y="12883.77"/>
+      <node id="2309384888" x="337.12" y="12832.48"/>
+      <node id="2309384890" x="352.40" y="13128.43"/>
+      <node id="2309384908" x="303.99" y="13653.31"/>
+      <node id="2309384913" x="298.02" y="13796.32"/>
+      <node id="250966173" x="1509.28" y="2752.98"/>
+      <node id="250966178" x="1537.35" y="2698.10"/>
+      <node id="250966183" x="1622.77" y="2773.01"/>
+      <node id="254482149" x="287.47" y="14050.40"/>
+      <node id="254482188" x="204.48" y="14782.97"/>
+      <node id="2557520658" x="1577.12" y="2482.50"/>
+      <node id="2557520659" x="1558.47" y="2488.19"/>
+      <node id="26609271" x="109.51" y="13942.98"/>
+      <node id="267532588" x="302.72" y="13298.61"/>
+      <node id="267532682" x="0.00" y="14937.10"/>
+      <node id="26869417" x="2151.50" y="0.00"/>
+      <node id="26869418" x="2167.40" y="7.49"/>
+      <node id="2800347206" x="12.51" y="14941.57"/>
+      <node id="29747074" x="1493.92" y="2929.14"/>
+      <node id="29747075" x="1448.42" y="3085.33"/>
+      <node id="29747082" x="1655.80" y="2574.65"/>
+      <node id="3321250461" x="337.15" y="13018.59"/>
+      <node id="3347605792" x="1619.93" y="2569.01"/>
+      <node id="3347606294" x="1707.39" y="2583.19"/>
+      <node id="3347606296" x="1653.92" y="2584.04"/>
+      <node id="3347606302" x="1649.21" y="2611.85"/>
+      <node id="3347606305" x="1508.07" y="2854.00"/>
+      <node id="3347606307" x="1434.82" y="3250.28"/>
+      <node id="344222949" x="209.67" y="14481.35"/>
+      <node id="350380302" x="45.71" y="14110.38"/>
+      <node id="3779207414" x="297.47" y="13421.75"/>
+      <node id="3779207419" x="309.37" y="13526.63"/>
+      <node id="4971737525" x="181.50" y="14841.80"/>
+      <node id="5913529" x="331.08" y="12983.69"/>
+      <node id="5913535" x="272.07" y="14019.79"/>
+      <node id="679686945" x="685.66" y="9887.74"/>
+      <node id="747044287" x="263.37" y="14105.63"/>
+      <node id="8562052108" x="227.44" y="13825.53"/>
+   </nodes>
+   <links capperiod="01:00:00">
+      <link id="-327940147" from="3347606302" to="3347606296" length="17.08" capacity="1800.00" freespeed="22.22" permlanes="1"/>
+      <link id="-327940150" from="250966183" to="3347606302" length="165.36" capacity="1800.00" freespeed="22.22" permlanes="1"/>
+      <link id="-4681719" from="3347606296" to="29747082" length="9.45" capacity="1800.00" freespeed="22.22" permlanes="1"/>
+      <link id="134159383" from="21607269" to="26609271" length="381.64" capacity="3600.00" freespeed="27.78" permlanes="2"/>
+      <link id="134159384" from="1475350058" to="1475350057" length="183.91" capacity="1800.00" freespeed="22.22" permlanes="1"/>
+      <link id="134159385" from="21607745" to="3779207419" length="150.37" capacity="1800.00" freespeed="22.22" permlanes="1"/>
+      <link id="134159386" from="1475350057" to="1475350055" length="265.20" capacity="1800.00" freespeed="16.67" permlanes="1"/>
+      <link id="134159387" from="1475350055" to="21607745" length="181.69" capacity="1800.00" freespeed="11.11" permlanes="1"/>
+      <link id="144447160" from="15848360" to="2800347206" length="625.82" capacity="3600.00" freespeed="39.44" permlanes="2"/>
+      <link id="144447161" from="267532588" to="1618588414" length="10100.52" capacity="5400.00" freespeed="39.44" permlanes="3"/>
+      <link id="144447168" from="5913529" to="3321250461" length="30.62" capacity="3600.00" freespeed="33.33" permlanes="2"/>
+      <link id="184190245" from="3779207419" to="2309384908" length="118.80" capacity="7200.00" freespeed="33.33" permlanes="4"/>
+      <link id="221960008" from="3779207414" to="267532588" length="115.26" capacity="7200.00" freespeed="39.44" permlanes="4"/>
+      <link id="221960009" from="747044287" to="5913535" length="78.49" capacity="7200.00" freespeed="39.44" permlanes="4"/>
+      <link id="221960011" from="2309384908" to="2309384913" length="135.13" capacity="5400.00" freespeed="33.33" permlanes="3"/>
+      <link id="221960012" from="2309384913" to="254482149" length="246.23" capacity="7200.00" freespeed="33.33" permlanes="4"/>
+      <link id="221960014" from="254482149" to="254482188" length="733.26" capacity="5400.00" freespeed="33.33" permlanes="3"/>
+      <link id="221960016" from="2309384888" to="2219600162" length="43.35" capacity="7200.00" freespeed="33.33" permlanes="4"/>
+      <link id="2219600161" from="2219600162" to="5913529" length="92.06" capacity="9000.00" freespeed="33.33" permlanes="5"/>
+      <link id="221960018" from="5913535" to="3779207414" length="590.47" capacity="5400.00" freespeed="39.44" permlanes="3"/>
+      <link id="221960022" from="350380302" to="15848360" length="199.64" capacity="5400.00" freespeed="22.22" permlanes="3"/>
+      <link id="23203240" from="250966178" to="250966183" length="146.08" capacity="1800.00" freespeed="22.22" permlanes="1"/>
+      <link id="23498263" from="254482149" to="2139163501" length="329.53" capacity="1800.00" freespeed="22.22" permlanes="1"/>
+      <link id="24610675" from="8562052108" to="350380302" length="337.63" capacity="3600.00" freespeed="27.78" permlanes="2"/>
+      <link id="249065688" from="1618588415" to="3347606307" length="22.13" capacity="5400.00" freespeed="39.44" permlanes="3"/>
+      <link id="249065689" from="2557520658" to="250966178" length="211.37" capacity="7200.00" freespeed="39.44" permlanes="4"/>
+      <link id="249065690" from="1618588414" to="29747075" length="174.13" capacity="7200.00" freespeed="39.44" permlanes="4"/>
+      <link id="249065691" from="250966173" to="2557520659" length="261.33" capacity="7200.00" freespeed="39.44" permlanes="4"/>
+      <link id="249065692" from="2557520659" to="26869417" length="2554.93" capacity="5400.00" freespeed="39.44" permlanes="3"/>
+      <link id="249065693" from="250966178" to="3347606305" length="154.33" capacity="5400.00" freespeed="39.44" permlanes="3"/>
+      <link id="27392557" from="267532682" to="21607269" length="634.18" capacity="3600.00" freespeed="39.44" permlanes="2"/>
+      <link id="27392567" from="4971737525" to="747044287" length="736.71" capacity="5400.00" freespeed="39.44" permlanes="3"/>
+      <link id="290355580" from="26869418" to="2557520658" length="2541.47" capacity="5400.00" freespeed="39.44" permlanes="3"/>
+      <link id="325467901" from="2309384890" to="8562052108" length="798.90" capacity="3600.00" freespeed="33.33" permlanes="2"/>
+      <link id="325467904" from="3321250461" to="2309384890" length="110.98" capacity="3600.00" freespeed="33.33" permlanes="2"/>
+      <link id="32637024" from="29747074" to="1618588415" length="292.30" capacity="7200.00" freespeed="39.44" permlanes="4"/>
+      <link id="327940143" from="3347606305" to="29747074" length="72.27" capacity="5400.00" freespeed="39.44" permlanes="3"/>
+      <link id="327940144" from="3347606307" to="31219920" length="1464.87" capacity="5400.00" freespeed="39.44" permlanes="3"/>
+      <link id="327940147" from="3347606296" to="3347606302" length="17.08" capacity="1800.00" freespeed="22.22" permlanes="1"/>
+      <link id="327940148" from="3347606302" to="3347605792" length="41.90" capacity="1800.00" freespeed="22.22" permlanes="1"/>
+      <link id="327940149" from="3347606294" to="3347606302" length="57.07" capacity="1800.00" freespeed="22.22" permlanes="1"/>
+      <link id="327940150" from="3347606302" to="250966183" length="166.49" capacity="1800.00" freespeed="22.22" permlanes="1"/>
+      <link id="43144709" from="250966183" to="29747074" length="195.07" capacity="1800.00" freespeed="22.22" permlanes="1"/>
+      <link id="43144710" from="29747075" to="250966173" length="329.75" capacity="5400.00" freespeed="39.44" permlanes="3"/>
+      <link id="4361207" from="5913535" to="350380302" length="440.88" capacity="1800.00" freespeed="22.22" permlanes="1"/>
+      <link id="4365738" from="26609271" to="1475350058" length="154.59" capacity="1800.00" freespeed="27.78" permlanes="1"/>
+      <link id="4365739" from="26609271" to="3779207414" length="554.99" capacity="1800.00" freespeed="27.78" permlanes="1"/>
+      <link id="4681718" from="29747075" to="250966173" length="633.93" capacity="1800.00" freespeed="22.22" permlanes="1"/>
+      <link id="4681719" from="29747082" to="3347606296" length="9.45" capacity="1800.00" freespeed="22.22" permlanes="1"/>
+      <link id="531513801" from="344222949" to="747044287" length="375.70" capacity="1800.00" freespeed="22.22" permlanes="1"/>
+      <link id="53837958" from="679686945" to="2309384888" length="2961.33" capacity="5400.00" freespeed="33.33" permlanes="3"/>
+      <link id="55063207" from="5913529" to="3779207419" length="535.27" capacity="5400.00" freespeed="33.33" permlanes="3"/>
+      <link id="constructionedge" from="31219921" to="31219922" length="674.25" capacity="5400.00" freespeed="39.44" permlanes="3"/>
+      <link id="constructionover" from="31219922" to="679686945" length="3906.26" capacity="5400.00" freespeed="39.44" permlanes="3"/>
+      <link id="observableedge" from="31219920" to="31219921" length="645.30" capacity="5400.00" freespeed="39.44" permlanes="3"/>
+   </links>
+</network>

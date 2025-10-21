@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<routes>
+  <vType id="car" vClass="passenger" accel="2.6" decel="4.5" sigma="0.5" length="4.5" maxSpeed="33.33"/>
+  <vType id="truck" vClass="truck" accel="1.0" decel="4.0" sigma="0.6" length="12.0" maxSpeed="25.0"/>
+  <flow id="f_main_car" type="car" begin="0" end="3600" vehsPerHour="800" fromEdge="E_MAIN" toEdge="E_MAIN"/>
+  <flow id="f_main_truck" type="truck" begin="0" end="3600" vehsPerHour="150" fromEdge="E_MAIN" toEdge="E_MAIN"/>
+  <flow id="f_onramp" type="car" begin="300" end="1800" vehsPerHour="400" fromEdge="E_ON" toEdge="E_MAIN"/>
+  <flow id="f_off_exit" type="car" begin="600" end="3600" vehsPerHour="300" fromEdge="E_MAIN" toEdge="E_OFF"/>
+</routes>

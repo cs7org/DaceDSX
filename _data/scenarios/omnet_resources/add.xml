@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on Mon May  9 12:01:32 2022 by Eclipse SUMO jtrrouter Version 1.7.0
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/jtrrouterConfiguration.xsd">
+
+    <input>
+        <net-file value="net.net.xml"/>
+        <route-files value="flows.xml"/>
+    </input>
+
+    <output>
+        <output-file value="routes.xml"/>
+    </output>
+
+    <processing>
+        <no-internal-links value="true"/>
+        <max-edges-factor value="0.01"/>
+        <turn-defaults value="25,75,0"/>
+        <accept-all-destinations value="true"/>
+        <allow-loops value="true"/>
+    </processing>
+
+</configuration>
+-->
+
+<additional>
+
+    <vType id="car" maxSpeed="38.888" speedFactor="0.9" speedDev="0.2" sigma="0.5" startupDelay="1" minGap="5" length="5"/>
+    <!--vType id="car" maxSpeed="38.888" speedFactor="0.9" speedDev="0.2" sigma="0.5" /-->
+
+
+</additional>

@@ -1,0 +1,4 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<additional>
+  <laneAreaDetector id="det0" lane="E0_0" pos="100" freq="1" file="det.out"/>
+</additional>

@@ -17,7 +17,7 @@ Please run `python3.11 setup.py build_ext --inplace [--compiler=mingw32 #only fo
 Please modify the config file to the relative paths.
 
 ### Run
-from the main directory 'sudo ./runSim.sh path/to/_data/scenarios/codipytest.json' 
+from the main directory `sudo ./runSim.sh path/to/_data/scenarios/codipytest.json`
 
 <a name="collaboration"></a>
 ### Collaboration

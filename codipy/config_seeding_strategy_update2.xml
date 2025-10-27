@@ -2,14 +2,8 @@
 
 <configuration>
 
-    <input>
-	    <sumo-config value="/home/niebisch/Documents/manhatten_grid/manhattengrid_network_traci_only_144.sumocfg"/>
-        <sumo-path value="/home/niebisch/Documents/sumo/bin/sumo-gui"/>
-        <sumo-buildings value="/home/niebisch/Documents/InTAS_small_v2/scenario/poly.add.xml"/>
-        <sumo-polygons value="/home/niebisch/Documents/InTAS_small_v2/scenario/poly.add.xml"/>
-        <sumo-route value="/home/niebisch/Documents/manhatten_grid/manhatten_144.rou.xml" />
-        <sumo-network value="/home/niebisch/Documents/manhatten_grid/manhattengrid.net.xml"/>
-        <ap-coordinates value ="/home/niebisch/Documents/chunksimulation/cluster_wlan_test/ap_coords.txt" />
+    <input> <!-- modify me! -->
+        <ap-coordinates value ="ap_coords.txt" />
 
     </input>
 

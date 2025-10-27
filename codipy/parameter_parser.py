@@ -2,7 +2,6 @@ import ast
 import itertools
 import os
 import xmltodict as xdict
-from shapely.geometry import Polygon
 
 
 def parse_parameter_xml(config: str, parameter_index: int) -> (str, str, int, int, int, int, float, bool, int, str):
@@ -15,47 +14,11 @@ def parse_parameter_xml(config: str, parameter_index: int) -> (str, str, int, in
     config = os.path.abspath(config)
     with open(config, 'rb') as config_file:
         xml_dict = xdict.parse(config_file)
-    sumo_cfg = list(xml_dict['configuration']['input']['sumo-config'].values())[0]
-    sumo_binary = list(xml_dict['configuration']['input']['sumo-path'].values())[0]
-    sumo_route = None
-    if 'sumo-route' in xml_dict['configuration']['input']:
-        sumo_route = list(xml_dict['configuration']['input']['sumo-route'].values())[0]
+    
     output_path_string = list(xml_dict['configuration']['output']['output-path'].values())[0]
     output_abs_path = os.path.abspath(output_path_string)
-    sumo_buildings = list(xml_dict['configuration']['input']['sumo-buildings'].values())[0]
-    sumo_polygons = list(xml_dict['configuration']['input']['sumo-polygons'].values())[0]
-
-    with open(sumo_polygons, 'rb') as polygon_file:
-        xml_dict_polygon = xdict.parse(polygon_file)
-    residential_areas = []
-    for polygon in xml_dict_polygon['additional']['poly']:
-        if polygon['@type'] == "residential" and polygon['@fill'] != "0":
-            shape_list = []
-            for coord_string in polygon['@shape'].split(' '):
-                coord_1, coord_2 = coord_string.split(',')
-                coord_1 = float(coord_1)
-                coord_2 = float(coord_2)
-                shape_list.append([coord_1, coord_2])
-            residential_areas.append(Polygon(shape_list))
-
-    with open(sumo_buildings, 'rb') as building_file:
-        xml_dict_building = xdict.parse(building_file)
-    area_list = []
-    id_list = []
-    for building in xml_dict_building['additional']['poly']:
-        if building['@type'] == "building" and building['@fill'] != "0":
-            shape_list = []
-            for coord_string in building['@shape'].split(' '):
-                coord_1, coord_2 = coord_string.split(',')
-                coord_1 = float(coord_1)
-                coord_2 = float(coord_2)
-                shape_list.append([coord_1, coord_2])
-            p = Polygon(shape_list)
-            for res_area in residential_areas:
-                if p.intersects(res_area):
-                    area_list.append(p.area)
-                    id_list.append(building['@id'])
-                    break
+    
+    # Parse AP coordinates if provided
     ap_coords = None
     if 'ap-coordinates' in xml_dict['configuration']['input']:
         ap_coords = []
@@ -223,11 +186,11 @@ def parse_parameter_xml(config: str, parameter_index: int) -> (str, str, int, in
         duration = False
         duration_parameter = int(list(xml_dict['configuration']['time']['number-of-routes'].values())[0])
 
-    return sumo_cfg, sumo_binary, number_vehicles, additional_vehicles, update_size, initial_seeds, v2v_distance, \
-        duration, duration_parameter, output_abs_path, (id_list, area_list), ap_placement, v2v_device, wlan_device, \
+    return number_vehicles, additional_vehicles, update_size, initial_seeds, v2v_distance, \
+        duration, duration_parameter, output_abs_path, ap_placement, v2v_device, wlan_device, \
         wlan_distance, wlan_beacon_interval, v2v_heartbeat_interval, wlan_ap_count, wlan_heartbeat_strategy, \
         v2v_heartbeat_strategy, heartbeat_encoding, v2v_data_rate, wlan_data_rate, seeding_strategy, parameters, \
-        sumo_route, communication_standard, mcs, additional_attenuation, ap_coords, max_number_connections, v2v_equipment_percentage, wlan_equipment_percentage, wlan_ap_percentage
+        communication_standard, mcs, additional_attenuation, ap_coords, max_number_connections, v2v_equipment_percentage, wlan_equipment_percentage, wlan_ap_percentage
 
 
 def parse_constants_xml(config) -> (int, float, float, int, float, float, bool, bool, bool, bool, float, float, float):

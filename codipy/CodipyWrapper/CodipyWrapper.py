@@ -19,8 +19,8 @@ workspace_root = os.path.dirname(this_directory)
 if workspace_root not in sys.path:
     sys.path.insert(0, workspace_root)
 
-sys.path.append('../PythonBaseWrapper/src/logic')
-sys.path.append('../PythonBaseWrapper/src/communication')
+sys.path.append('../../PythonBaseWrapper/src/logic')
+sys.path.append('../../PythonBaseWrapper/src/communication')
 
 from TimeSync import TimeSync
 from KafkaConsumer import KafkaConsumer
@@ -43,7 +43,6 @@ registry = config["general"]["schemaRegistry"]
 
 
 class CodipyWrapper:
-    """Minimal CoDiPy Wrapper for data consumption and synchronization."""
     
     def __init__(
         self,
@@ -77,6 +76,7 @@ class CodipyWrapper:
         self.timeSync = None
         self.demoMode = False
         self.step_length_seconds = step_length_seconds
+        self.stepLengthMs = int(step_length_seconds * 1000)  # Default value, will be overridden from scenario
         self._traci = traci_interface or TraCIInterface(step_length=self.step_length_seconds)
         self.traci = self._traci  
 
@@ -114,6 +114,12 @@ class CodipyWrapper:
                 self.sim = sim
                 self.responsibility = sim.get('responsibilities', [])
                 self.observers = sim.get('observers', [])
+                
+                # Read stepLength from scenario configuration (already in milliseconds)
+                if 'stepLength' in sim:
+                    self.stepLengthMs = sim['stepLength']
+                    print(f"Step length set from scenario config: {self.stepLengthMs}ms", flush=True)
+                
                 break
 
         self.sim = self.instanceID
@@ -164,13 +170,12 @@ class CodipyWrapper:
         try:
             self.klog("starting consumption")
 
-            stepLengthMs = int(self.step_length_seconds * 1000)
-            end = stepLengthMs * 1000
+            end = self.sce['simulationEnd']
 
             self.startMainConsumer()
 
             while self.timeSync.currentLocalTime < end:
-                self.timeSync.timeAdvance(stepLengthMs)
+                self.timeSync.timeAdvance(self.stepLengthMs)
                 drained = self._drain_micro_messages()
                 self.count_msgs += len(drained)
                 self._push_messages_to_traci(drained)
@@ -229,10 +234,9 @@ class CodipyWrapper:
     def start(self) -> None:
      
         self.klog("starting consumption")
-        stepLengthMs = int(self.step_length_seconds * 1000)
-        self.end_time = stepLengthMs * 1000
+        self.end_time = self.sce['simulationEnd']
         self.startMainConsumer()
-        print(f"CodipyWrapper started (will run until {self.end_time}ms)")
+        print(f"CodipyWrapper started (will run until {self.end_time}ms with {self.stepLengthMs}ms steps)")
 
     def step(self) -> bool:
         """
@@ -245,8 +249,7 @@ class CodipyWrapper:
             self.klog("finished")
             return False
         
-        stepLengthMs = int(self.step_length_seconds * 1000)
-        self.timeSync.timeAdvance(stepLengthMs)
+        self.timeSync.timeAdvance(self.stepLengthMs)
         
         drained = self._drain_micro_messages()
         self.count_msgs += len(drained)

@@ -296,10 +296,10 @@ def run_passive(config: str, scenario_id: str, instance_id: str) -> None:
     # Parse configuration (use parameter_index=0 for default parameters)
     parameter_index = 0
     try:
-        sumo_cfg, sumo_binary, number_vehicles, additional_vehicles, update_size, initial_seeds, v2v_distance, duration, \
+        _, _, number_vehicles, additional_vehicles, update_size, initial_seeds, v2v_distance, duration, \
             duration_parameter, output_abs_path, buildings_tuple, ap_placement, v2v_device, wlan_device, wlan_distance, \
             wlan_beacon_interval, v2v_heartbeat_interval, wlan_ap_count, wlan_heartbeat_strategy, v2v_heartbeat_strategy, \
-            heartbeat_encoding, v2v_data_rate, wlan_data_rate, seeding_strategy, parameters, sumo_route, \
+            heartbeat_encoding, v2v_data_rate, wlan_data_rate, seeding_strategy, _, _, \
             communication_standard, mcs, additional_attenuation, ap_coords, max_number_connections, \
             v2v_equipment_percentage, wlan_equipment_percentage, wlan_ap_percentage \
             = parameter_parser.parse_parameter_xml(config, parameter_index)
@@ -404,7 +404,7 @@ def run_passive(config: str, scenario_id: str, instance_id: str) -> None:
         ism_layer, v2v_device, wlan_device,
         wlan_heartbeat_strategy, v2v_heartbeat_strategy, heartbeat_encoding,
         v2v_heartbeat_interval, v2v_distance, v2v_data_rate, var_dump_file_name,
-        duration, wlan_distance, 1.0, sumo_route, v2v_equipment_percentage,
+        duration, wlan_distance, 1.0, None, v2v_equipment_percentage,
         wlan_equipment_percentage
     )
     print("FleetManager initialized (passive mode: dynamic vehicle count)")

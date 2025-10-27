@@ -13,9 +13,6 @@ Please install the packages in the `requirements.txt` file
 
 Please run `python3.11 setup.py build_ext --inplace [--compiler=mingw32 #only for Windows!]` for compiling the Cython libraries.
 
-### config file
-Please modify the config file to the relative paths.
-
 ### Run
 from the main directory `sudo ./runSim.sh path/to/_data/scenarios/codipytest.json`
 

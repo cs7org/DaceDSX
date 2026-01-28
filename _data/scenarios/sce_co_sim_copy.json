@@ -1,0 +1,85 @@
+{
+  "scenarioID": "ID1_co_sim_copy_",
+  "domainReferences": {},
+  "simulationStart": 0,
+  "simulationEnd": 1,
+  "execution": {
+    "randomSeed": 23,
+    "constraints": "",
+    "priority": 0,
+    "syncedParticipants": 4
+  },
+  "buildingBlocks": [
+    {
+      "instanceID": "PW0",
+      "type": "PyPSAWrapper",
+      "layer": "network",
+      "domain": "energy",
+      "stepLength": 1,
+      "parameters": {"copy_buses":"BUS5, BUS6, BUS8"},
+      "resources": {
+        "file:///../_data/resources/ieee_9.hdf5": "Network"
+      },
+      "results": {},
+      "synchronized": true,
+      "isExternal": false,
+      "responsibilities": [
+        "*"
+      ],
+      "observers": []
+    },
+    {
+      "instanceID": "PW1",
+      "type": "pandapowerWrapper",
+      "layer": "network",
+      "domain": "energy",
+      "stepLength": 1,
+      "parameters": {"copy_buses":"BUS5"},
+      "resources": {
+        "file:///../_data/resources/ieee_13_BUS5.p": "Network"
+      },
+      "results": {},
+      "synchronized": true,
+      "isExternal": false,
+      "responsibilities": [
+      ],
+      "observers": []
+    },
+    {
+      "instanceID": "PW2",
+      "type": "pandapowerWrapper",
+      "layer": "network",
+      "domain": "energy",
+      "stepLength": 1,
+      "parameters": {"copy_buses":"BUS6"},
+      "resources": {
+        "file:///../_data/resources/ieee_13_BUS6.p": "Network"
+      },
+      "results": {},
+      "synchronized": true,
+      "isExternal": false,
+      "responsibilities": [
+      ],
+      "observers": []
+    },
+    {
+      "instanceID": "PW3",
+      "type": "pandapowerWrapper",
+      "layer": "network",
+      "domain": "energy",
+      "stepLength": 1,
+      "parameters": {"copy_buses":"BUS8"},
+      "resources": {
+        "file:///../_data/resources/ieee_13_BUS8.p": "Network"
+      },
+      "results": {},
+      "synchronized": true,
+      "isExternal": false,
+      "responsibilities": [
+      ],
+      "observers": []
+    }
+  ],
+  "translators": [],
+  "projectors": []
+}

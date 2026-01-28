@@ -1,26 +1,3 @@
-#!/usr/bin/env python3
-#
-# Copyright (c) 2025 Informatik 7 Friedrich-Alexander Universität Erlangen-Nürnberg,
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-#
-
 import logging
 import sys
 import time
@@ -34,7 +11,7 @@ sys.path.append(this_directory+'/../PythonBaseWrapper/src/communication')
 from TimeSync import TimeSync
 from KafkaConsumer import KafkaConsumer
 from KafkaProducer import KafkaProducer
-from PyPSAApi import PyPSAAPI
+from pandapowerApi import pandapowerAPI
 
 config = configparser.ConfigParser()
 config.read('config.properties')
@@ -49,7 +26,7 @@ import json
 
 
 
-class PyPSAWrapper():
+class pandapowerWrapper():
     def __init__(self, scenarioID, instanceID):
         self.regexTopic = ["^provision\.simulation\." + scenarioID + "\.energy\.network"]
         self.topicPre = "provision.simulation." + scenarioID + ".energy."
@@ -122,7 +99,6 @@ class PyPSAWrapper():
             self.responsibility = sim['responsibilities']
             self.observers = sim['observers']
             self.parameters = sim['parameters']
-            print("PARAMETERS",self.parameters)
 
         if self.sim == None:
             print("no sim desc was found")
@@ -249,9 +225,8 @@ class PyPSAWrapper():
             network_file = self.network
             network_file = self.network.split("///")[1]
             end = self.sce['simulationEnd']
-
             self.bbConsumer = KafkaConsumer(broker, registry, self.scetopic, self.kid + ".sce")
-            self.api = PyPSAAPI(network_file, self.timeSync, self.bbConsumer, self.producer, self.scenarioID, self.other_instance_topics,self.instanceID, stepLengthS, self.sce['simulationEnd']/self.sim['stepLength'], to_observe=self.buses_to_observe(), parameters=self.parameters)
+            self.api = pandapowerAPI(network_file, self.timeSync, self.bbConsumer, self.producer, self.scenarioID, self.other_instance_topics,self.instanceID, stepLengthS, self.sce['simulationEnd']/self.sim['stepLength'], to_observe=self.buses_to_observe(), parameters=self.parameters)
             self.startMainConsumer()
 
             self.api.init(self.responsibility)
@@ -292,7 +267,6 @@ class PyPSAWrapper():
                     print(e)
                 iteration = iteration + 1
             self.klog("finished")
-            self.api.write_results()
 
         except Exception as e:
             print("main loop catched exception - vvvvvvvv")
@@ -300,6 +274,7 @@ class PyPSAWrapper():
             print("main loop catched exception - ^^^^^^^")
 
         finally:
+            self.api.write_results()
             if self.api is not None:
                 self.api.destroy()
             if self.consumer is not None:
@@ -308,8 +283,8 @@ class PyPSAWrapper():
                 self.timeSync.leaveTiming()
             # saving results
             # self.api.network.export_to_hdf5(os. getcwd() + "/" + self.instanceID+'_results')
-            # self.api.network.buses_t.v_mag_pu.to_csv("/mnt/c/Users/seiwerth/Desktop/daceds4energy/_pypsa_results" + "/" +self.scenarioID +'_'+self.instanceID+'_results_v_mag_pu.csv', sep=';', index=True)
-            # self.api.network.lines_t.p0.to_csv("/mnt/c/Users/seiwerth/Desktop/daceds4energy/_pypsa_results" + "/" +self.scenarioID +'_'+self.instanceID+'_results_p0.csv', sep=';', index=True)
+            # self.api.network.buses_t.v_mag_pu.to_csv("/mnt/c/Users/seiwerth/Desktop/daceds4energy/_pandapower_results" + "/" +self.scenarioID +'_'+self.instanceID+'_results_v_mag_pu.csv', sep=';', index=True)
+            # self.api.network.lines_t.p0.to_csv("/mnt/c/Users/seiwerth/Desktop/daceds4energy/_pandapower_results" + "/" +self.scenarioID +'_'+self.instanceID+'_results_p0.csv', sep=';', index=True)
 
 
 def main():
@@ -326,7 +301,7 @@ def main():
     print(scenarioID, instanceID)
 
     try:
-        ctrl = PyPSAWrapper(scenarioID ,instanceID)
+        ctrl = pandapowerWrapper(scenarioID ,instanceID)
         print("created Wrapper:", ctrl)
         if scenarioID[0:4] == "demo":
             ctrl.demoMode = True

@@ -1,0 +1,32 @@
+{
+    "scenarioID": "pandatest",
+    "domainReferences": {},
+    "simulationStart": 0,
+    "simulationEnd": 10000,
+    "execution": {
+        "randomSeed": 42,
+        "syncedParticipants": 1,
+        "constraints": "",
+        "priority": 0
+    },
+    "buildingBlocks": [
+        {
+            "instanceID": "PandapowerWrapper0",
+            "type": "PandapowerWrapper",
+            "layer": "micro",
+            "domain": "energy",
+            "stepLength": 1000,
+            "parameters": {},
+            "resources": {
+                "network.json": "Network"
+            },
+            "results": {},
+            "synchronized": true,
+            "isExternal": false,
+            "responsibilities": [],
+            "observers": []
+        }
+    ],
+    "translators": [],
+    "projectors": []
+}

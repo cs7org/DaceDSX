@@ -1,0 +1,80 @@
+{
+  "name": "example_network",
+  "f_hz": 50.0,
+  "sn_mva": 1,
+  "bus": [
+    {
+      "name": "Grid",
+      "vn_kv": 20.0,
+      "type": "b"
+    },
+    {
+      "name": "Bus1",
+      "vn_kv": 0.4,
+      "type": "b"
+    },
+    {
+      "name": "Bus2",
+      "vn_kv": 0.4,
+      "type": "b"
+    }
+  ],
+  "ext_grid": [
+    {
+      "name": "GridConn",
+      "bus": 0,
+      "vm_pu": 1.02,
+      "va_degree": 0.0
+    }
+  ],
+  "trafo": [
+    {
+      "name": "Trafo1",
+      "hv_bus": 0,
+      "lv_bus": 1,
+      "sn_mva": 0.63,
+      "vn_hv_kv": 20.0,
+      "vn_lv_kv": 0.4,
+      "vk_percent": 6.0,
+      "vkr_percent": 1.206,
+      "pfe_kw": 1.65,
+      "i0_percent": 0.2619,
+      "shift_degree": 150.0,
+      "vector_group": "Dyn5"
+    }
+  ],
+  "line": [
+    {
+      "name": "Line1",
+      "from_bus": 1,
+      "to_bus": 2,
+      "length_km": 0.1,
+      "r_ohm_per_km": 0.642,
+      "x_ohm_per_km": 0.083,
+      "c_nf_per_km": 210.0,
+      "max_i_ka": 0.142
+    }
+  ],
+  "load": [
+    {
+      "name": "Load1",
+      "bus": 1,
+      "p_mw": 0.05,
+      "q_mvar": 0.02
+    },
+    {
+      "name": "Load2",
+      "bus": 2,
+      "p_mw": 0.03,
+      "q_mvar": 0.01
+    }
+  ],
+  "sgen": [
+    {
+      "name": "PV1",
+      "bus": 2,
+      "p_mw": 0.01,
+      "q_mvar": 0.0
+    }
+  ]
+}

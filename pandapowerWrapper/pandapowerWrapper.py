@@ -15,7 +15,6 @@ from pandapowerApi import pandapowerAPI
 
 config = configparser.ConfigParser()
 config.read('config.properties')
-print("HERE", config["general"])
 broker = config["general"]["kafkaBroker"]
 registry = config["general"]["schemaRegistry"]
 baseDir = "/daceDS/CarlaWrapper/tmp/"
@@ -63,34 +62,31 @@ class pandapowerWrapper():
         # print("trying to publish on topic="+topic+": "+value)
         self.jsonProducer.produce(topic, value, timestamp=self.timeSync.currentLocalTime)
 
-    def prepare(self):
-        self.klog("started")
+    def wait_for_scenario(self):
+        self.klog("Waiting for scenario...")
+        consumer = KafkaConsumer(broker, registry, self.scetopic, self.kid + ".sce")
 
-        #################################
-        ####### 1. get more info ########
-        self.sceConsumer = KafkaConsumer(broker, registry, self.scetopic, self.kid + ".sce")
-        self.sce = None
-        while self.sce == None:
-            try:
-                msg = self.sceConsumer.poll(1)
-                if (msg is not None):
-                    print("got return from poll", flush=True)
-                    self.sce = msg.value()
-                else:
-                    print("got null return from poll", flush=True)
-            except Exception as e:
-                print("Unexpected error:", sys.exc_info()[0], flush=True)
-                print("Unexpected error:", e, flush=True)
-                time.sleep(1)
-                print(".", end='', flush=True)
-            print("polling for sce", flush=True)
-        self.sceConsumer.stop()
-        print("got sce", flush=True)
+        while True:
+            msg = consumer.poll(1.0)
+            if msg is None or msg.error():
+                continue
+            scenario = msg.value()
+            self.sce = scenario
+            for block in scenario.get('buildingBlocks', []):
+                if block['instanceID'] == self.instanceID:
+                    self.sim_config = block
+                    self.scenario_data = scenario
+                    self.klog(f"Found config for {self.instanceID}")
+                    break
+            if self.sim_config:
+                break
+        consumer.stop()
 
+    def get_resources(self):
         ##get resources
         for sim in self.sce['buildingBlocks']:
             if sim['instanceID'] != self.instanceID:
-                self.other_instance_topics.append(self.topicPre+sim['instanceID'])
+                self.other_instance_topics.append(self.topicPre + sim['instanceID'])
                 continue
             self.sim = sim
             for resID, resType in sim["resources"].items():
@@ -100,15 +96,6 @@ class pandapowerWrapper():
             self.observers = sim['observers']
             self.parameters = sim['parameters']
 
-        if self.sim == None:
-            print("no sim desc was found")
-            sys.exit(1)
-
-        self.klog("initialized")
-
-        self.klog("waiting for resources")
-
-        # fetching resources
         print("fetching network", self.network, flush=True)
         self.resConsumer = KafkaConsumer(broker, registry, self.restopic, self.kid + ".res")
         while True:
@@ -121,15 +108,12 @@ class pandapowerWrapper():
                 resource = res.value()
                 print("received resource! ", resource, flush=True)
                 l = -1
-                print(((resource['File'] is None) and (resource['FileReference'] is None)), resource['File'], resource['FileReference'])
+                print(((resource['File'] is None) and (resource['FileReference'] is None)), resource['File'],
+                      resource['FileReference'])
                 if ((resource['File'] is None) and (resource['FileReference'] is None)):
                     continue
                 if (resource['File'] is not None):
                     l = len(resource['File'])
-
-                print(" id=", resource['ID'], " type=", resource['Type'], "file=", l, "bytes", flush=True)
-                print("Network", self.network, resource['FileReference'])
-                print((resource['File'] == self.network), (resource["Type"] == "Network"), flush=True)
                 if ((resource['FileReference'] == self.network) and (
                         resource["Type"] == "Network")):  # would take sumo maps aswell
                     print("saving to disk", flush=True)
@@ -148,6 +132,14 @@ class pandapowerWrapper():
                 print("Unexpected error:", e, flush=True)
                 time.sleep(1)
                 print(".", end='', flush=True)
+    def prepare(self):
+        self.klog("started")
+
+        #################################
+        ####### 1. get more info ########
+        self.wait_for_scenario()
+        # fetching resources
+        self.get_resources()
 
         ###############################
         ####### 2. start timing #######
@@ -220,19 +212,20 @@ class pandapowerWrapper():
             ### create api bridge and run  ######
             self.api = None
             stepLengthMs = self.sim['stepLength']
-            stepLengthS = self.sim['stepLength'] / 1000
             # mapFile = baseDir + self.roadMapFile
-            network_file = self.network
             network_file = self.network.split("///")[1]
-            end = self.sce['simulationEnd']
+            step_size = self.sim['stepLength']
+            sim_end = self.sce['simulationEnd']
+            # print("sim_end", sim_end, "step_size", step_size, "sim_end // step_size", sim_end // step_size)
+            n_steps = max(1, sim_end // step_size)
             self.bbConsumer = KafkaConsumer(broker, registry, self.scetopic, self.kid + ".sce")
-            self.api = pandapowerAPI(network_file, self.timeSync, self.bbConsumer, self.producer, self.scenarioID, self.other_instance_topics,self.instanceID, stepLengthS, self.sce['simulationEnd']/self.sim['stepLength'], to_observe=self.buses_to_observe(), parameters=self.parameters)
+            self.api = pandapowerAPI(network_file, self.timeSync, self.bbConsumer, self.producer, self.scenarioID, self.other_instance_topics,self.instanceID, step_size, n_steps, to_observe=self.buses_to_observe(), parameters=self.parameters)
             self.startMainConsumer()
 
             self.api.init(self.responsibility)
 
             iteration = 0
-            while self.timeSync.currentLocalTime < end:
+            while self.timeSync.currentLocalTime < sim_end:
 
                 # 1. ask to proceed
                 sssl = stepLengthMs
@@ -281,33 +274,19 @@ class pandapowerWrapper():
                 self.consumer.stop()
             if self.timeSync is not None:
                 self.timeSync.leaveTiming()
-            # saving results
-            # self.api.network.export_to_hdf5(os. getcwd() + "/" + self.instanceID+'_results')
-            # self.api.network.buses_t.v_mag_pu.to_csv("/mnt/c/Users/seiwerth/Desktop/daceds4energy/_pandapower_results" + "/" +self.scenarioID +'_'+self.instanceID+'_results_v_mag_pu.csv', sep=';', index=True)
-            # self.api.network.lines_t.p0.to_csv("/mnt/c/Users/seiwerth/Desktop/daceds4energy/_pandapower_results" + "/" +self.scenarioID +'_'+self.instanceID+'_results_p0.csv', sep=';', index=True)
-
-
 def main():
-    if (len(sys.argv) > 1):
-        scenarioID = sys.argv[1]
-        instanceID = sys.argv[2]
+    if len(sys.argv) > 2:
+        scenarioID, instanceID = sys.argv[1], sys.argv[2]
     else:
-        print("No SceID & SimID provided, using demo input")
-
-        from datetime import datetime
-        date_time = datetime.now()
-        scenarioID = "demo " +date_time.strftime("%m%d%H%M%S")
-        instanceID = "carla0  "  # +date_time.strftime("%m/%d/%Y, %H:%M:%S")
-    print(scenarioID, instanceID)
+        print("Usage: python pandapowerWrapper.py <scenarioID> <instanceID>")
+        sys.exit(1)
 
     try:
-        ctrl = pandapowerWrapper(scenarioID ,instanceID)
-        print("created Wrapper:", ctrl)
-        if scenarioID[0:4] == "demo":
-            ctrl.demoMode = True
+        wrapper = pandapowerWrapper(scenarioID ,instanceID)
+        print("created Wrapper:", wrapper)
 
-        ctrl.prepare()
-        ctrl.run()
+        wrapper.prepare()
+        wrapper.run()
 
     except KeyboardInterrupt:
         print('\nCancelled by user. Bye!')

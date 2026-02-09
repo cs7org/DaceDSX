@@ -66,6 +66,59 @@ class pandapowerAPI(object):
         self.to_observe = to_observe
         self.buses_at_cut = []
 
+    def build_network(self, data):
+        net = pp.create_empty_network(
+            name=data.get('name', 'network'),
+            f_hz=data.get('f_hz', 50.0),
+            sn_mva=data.get('sn_mva', 1)
+        )
+        
+        for bus in data.get('bus', []):
+            pp.create_bus(net, vn_kv=bus['vn_kv'], name=bus.get('name'),
+                         type=bus.get('type', 'b'), in_service=bus.get('in_service', True))
+        
+        for eg in data.get('ext_grid', []):
+            pp.create_ext_grid(net, bus=eg['bus'], vm_pu=eg.get('vm_pu', 1.0),
+                              va_degree=eg.get('va_degree', 0.0), name=eg.get('name'))
+        
+        for tr in data.get('trafo', []):
+            pp.create_transformer_from_parameters(
+                net, hv_bus=tr['hv_bus'], lv_bus=tr['lv_bus'],
+                sn_mva=tr['sn_mva'], vn_hv_kv=tr['vn_hv_kv'], vn_lv_kv=tr['vn_lv_kv'],
+                vk_percent=tr['vk_percent'], vkr_percent=tr['vkr_percent'],
+                pfe_kw=tr.get('pfe_kw', 0), i0_percent=tr.get('i0_percent', 0),
+                shift_degree=tr.get('shift_degree', 0), name=tr.get('name'),
+                vector_group=tr.get('vector_group'))
+        
+        for ln in data.get('line', []):
+            pp.create_line_from_parameters(
+                net, from_bus=ln['from_bus'], to_bus=ln['to_bus'],
+                length_km=ln['length_km'], r_ohm_per_km=ln['r_ohm_per_km'],
+                x_ohm_per_km=ln['x_ohm_per_km'], c_nf_per_km=ln.get('c_nf_per_km', 0),
+                max_i_ka=ln.get('max_i_ka', 1), name=ln.get('name'))
+        
+        for ld in data.get('load', []):
+            pp.create_load(net, bus=ld['bus'], p_mw=ld['p_mw'],
+                          q_mvar=ld.get('q_mvar', 0), name=ld.get('name'))
+        
+        for sg in data.get('sgen', []):
+            pp.create_sgen(net, bus=sg['bus'], p_mw=sg['p_mw'],
+                          q_mvar=sg.get('q_mvar', 0), name=sg.get('name'))
+        
+        for gen in data.get('gen', []):
+            pp.create_gen(net, bus=gen['bus'], p_mw=gen['p_mw'],
+                         vm_pu=gen.get('vm_pu', 1.0), name=gen.get('name'))
+        
+        for sw in data.get('switch', []):
+            pp.create_switch(net, bus=sw['bus'], element=sw['element'],
+                            et=sw['et'], closed=sw.get('closed', True), name=sw.get('name'))
+        
+        for st in data.get('storage', []):
+            pp.create_storage(net, bus=st['bus'], p_mw=st['p_mw'],
+                             max_e_mwh=st['max_e_mwh'], name=st.get('name'))
+        
+        return net
+        
     def init(self, responsibility):
         print("____init____", flush=True)
         p = Path(self.network_path)
@@ -135,8 +188,11 @@ class pandapowerAPI(object):
             self.buses_at_cut = responsibility
         else:
             print("PARAMETERS", self.parameters)
-            self.buses_at_cut = self.parameters["copy_buses"].split(", ")
-            self.create_interface()
+            try:
+                self.buses_at_cut = self.parameters["copy_buses"].split(", ")
+                self.create_interface()
+            except:
+                print("No copy buses given")
         topics = []
         topics_to_create = []
         for ghost in self.buses_at_cut:
@@ -242,17 +298,22 @@ class pandapowerAPI(object):
     def postStep(self, step, timeInMS=0):
         print("___postStep___", flush=True)
         msg = self.consumer.poll(5)
-        do_step = True
+        if self.buses_at_cut:
+            do_step = True
+        else:    
+            do_step = False
         msgs = []
         change = False
         while (do_step):
             topics = []
             print("next_step", flush=True)
             do_step = False
+            got_message = False
             while msg:
                 msgs.append(msg)
                 msg = self.consumer.poll(1)
             if msgs:
+                got_message = True
                 change = False
                 for copy_bus in self.buses_at_cut:
                     if self.three_phase:
@@ -318,7 +379,7 @@ class pandapowerAPI(object):
                 # print("self.network.generators.p_set",self.network.generators.p_set, flush=True)
                 print("do_step", do_step, change)
             send_msgs = False
-            if do_step or change:
+            if (do_step or change) and got_message:
                 self.timeSync.timeAdvance(0)
                 self.step(step)
                 print("DOING STEP", flush=True)
@@ -337,6 +398,8 @@ class pandapowerAPI(object):
                     print("send_msgs", flush=True)
                     self.processStep(step)
                 print("DOING STEP", flush=True)
+            else:
+                do_step = False
 
             # msg = self.consumer.poll(5)
             # print('the new msg', msg, flush=True)

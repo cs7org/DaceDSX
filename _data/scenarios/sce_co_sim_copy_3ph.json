@@ -1,5 +1,5 @@
 {
-  "scenarioID": "co_sim_copy",
+  "scenarioID": "ID1_co_sim_copy_3ph",
   "domainReferences": {},
   "simulationStart": 0,
   "simulationEnd": 1,
@@ -34,7 +34,7 @@
       "layer": "network",
       "domain": "energy",
       "stepLength": 1,
-      "parameters": {"copy_buses":"BUS5"},
+      "parameters": {"copy_buses":"BUS5", "three_phase":"true"},
       "resources": {
         "file:///../_data/resources/ieee_13_BUS5.p": "Network"
       },
@@ -51,7 +51,7 @@
       "layer": "network",
       "domain": "energy",
       "stepLength": 1,
-      "parameters": {"copy_buses":"BUS6"},
+      "parameters": {"copy_buses":"BUS6", "three_phase":"true"},
       "resources": {
         "file:///../_data/resources/ieee_13_BUS6.p": "Network"
       },
@@ -68,7 +68,7 @@
       "layer": "network",
       "domain": "energy",
       "stepLength": 1,
-      "parameters": {"copy_buses":"BUS8"},
+      "parameters": {"copy_buses":"BUS8", "three_phase":"true"},
       "resources": {
         "file:///../_data/resources/ieee_13_BUS8.p": "Network"
       },

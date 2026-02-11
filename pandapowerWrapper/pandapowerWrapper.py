@@ -72,13 +72,12 @@ class pandapowerWrapper():
                 continue
             scenario = msg.value()
             self.sce = scenario
-            for block in scenario.get('buildingBlocks', []):
+            for block in self.sce['buildingBlocks']:
                 if block['instanceID'] == self.instanceID:
-                    self.sim_config = block
-                    self.scenario_data = scenario
+                    self.sim = block
                     self.klog(f"Found config for {self.instanceID}")
                     break
-            if self.sim_config:
+            if self.sim:
                 break
         consumer.stop()
 
@@ -132,6 +131,7 @@ class pandapowerWrapper():
                 print("Unexpected error:", e, flush=True)
                 time.sleep(1)
                 print(".", end='', flush=True)
+                
     def prepare(self):
         self.klog("started")
 

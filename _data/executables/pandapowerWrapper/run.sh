@@ -6,7 +6,7 @@ echo "BIN HIER" > out.txt
 SCENARIOID=$1
 SIMID=$2
 
-BASEDIR="../PyPSAWrapper"
+BASEDIR="../pandapowerWrapper"
 
 SOURCE="${BASH_SOURCE[0]}"
 while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
@@ -20,7 +20,7 @@ cd $BASEDIR
 echo "now in $PWD"
 
 #BIN="/usr/lib/jvm/jre1.8.0_271/bin/java -jar target/matsimWrapper-jar-with-dependencies.jar"
-BIN="./PyPSAWrapper.py"
+BIN="./pandapowerWrapper.py"
 
 gnome-terminal -- bash -c "python3 $BIN $SCENARIOID $SIMID 2>&1 | tee logs/${SCENARIOID}_${SIMID}.runlog; exec bash"
 # python3 $BIN $SCENARIOID $SIMID 2>&1 | tee logs/${SCENARIOID}_${SIMID}.runlog

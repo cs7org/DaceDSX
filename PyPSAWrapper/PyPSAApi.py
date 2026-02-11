@@ -418,7 +418,7 @@ class PyPSAAPI(object):
             df_bus = pd.DataFrame(bus_rows)
             df_line = pd.DataFrame(line_rows)
 
-            with pd.ExcelWriter(f"powerflow_results_{self.scenarioID}_{self.instanceID}.xlsx",
+            with pd.ExcelWriter(f"../_data/results/powerflow_results_{self.scenarioID}_{self.instanceID}.xlsx",
                                 engine="openpyxl") as writer:
                 df_bus.to_excel(writer, sheet_name="Bus", index=False)
                 df_line.to_excel(writer, sheet_name="Line", index=False)

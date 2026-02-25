@@ -1,0 +1,7 @@
+fastapi
+aiofiles
+jinja2
+uvicorn
+redis
+python-multipart
+pika

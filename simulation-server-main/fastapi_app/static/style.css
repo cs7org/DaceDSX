@@ -1,0 +1,195 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f5f7fa;
+    color: #333;
+    padding: 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+h1 {
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
+    color: #1a1a2e;
+}
+
+.subtitle {
+    color: #666;
+    margin-bottom: 2rem;
+}
+
+/* Card */
+.card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.card h2 {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    color: #1a1a2e;
+}
+
+/* Upload area */
+.upload-area {
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    margin-bottom: 1rem;
+}
+
+.upload-area:hover,
+.upload-area.dragover {
+    border-color: #4a90d9;
+    background: #f0f6ff;
+}
+
+.upload-area p {
+    color: #888;
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.upload-area .icon {
+    font-size: 2rem;
+}
+
+/* File list */
+.file-list {
+    list-style: none;
+    margin-bottom: 1rem;
+}
+
+.file-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    background: #f9f9f9;
+    border-radius: 4px;
+    margin-bottom: 0.25rem;
+    font-size: 0.9rem;
+}
+
+.file-list li .name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.file-list li .size {
+    color: #888;
+    margin: 0 1rem;
+    white-space: nowrap;
+}
+
+.file-list li .remove {
+    color: #e74c3c;
+    cursor: pointer;
+    border: none;
+    background: none;
+    font-size: 1.1rem;
+}
+
+/* Button */
+.btn {
+    background: #4a90d9;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    cursor: pointer;
+    width: 100%;
+    transition: background 0.2s;
+}
+
+.btn:hover {
+    background: #357abd;
+}
+
+.btn:disabled {
+    background: #aaa;
+    cursor: not-allowed;
+}
+
+/* Status */
+.status-bar {
+    display: none;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+}
+
+.status-bar.pending {
+    display: flex;
+    background: #fff8e1;
+    color: #f57f17;
+}
+
+.status-bar.running {
+    display: flex;
+    background: #e3f2fd;
+    color: #1565c0;
+}
+
+.status-bar.done {
+    display: flex;
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.status-bar.error {
+    display: flex;
+    background: #ffebee;
+    color: #c62828;
+}
+
+.spinner {
+    width: 20px;
+    height: 20px;
+    border: 3px solid currentColor;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Results */
+.results-list {
+    list-style: none;
+}
+
+.results-list li {
+    margin-bottom: 0.5rem;
+}
+
+.results-list a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #4a90d9;
+    text-decoration: none;
+    font-size: 0.95rem;
+}
+
+.results-list a:hover {
+    text-decoration: underline;
+}
+
+.hidden {
+    display: none;
+}

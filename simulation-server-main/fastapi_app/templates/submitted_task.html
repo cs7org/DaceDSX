@@ -1,0 +1,13 @@
+{% extends 'index.html' %}
+
+{% block body %}
+
+<div>
+    <h2>Task</h2>
+    <p>
+        {{ task_id }}: <a href="{{ url_for('check_task', task_id=task_id) }}">results</a> / <a href="{{ url_for('get_lp_file', task_id=task_id) }}">lp file</a>
+    </p>
+
+</div>
+
+{% endblock body %}

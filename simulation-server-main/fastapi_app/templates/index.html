@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content="DaceDS Simulation Server" />
+    <link href="{{ url_for('static', path='/style.css') }}" rel="stylesheet" />
+    <title>DaceDS Simulation Server</title>
+</head>
+
+<body>
+
+    <h1>DaceDS Simulation Server</h1>
+    <p class="subtitle">Upload simulation files and run your simulation</p>
+
+    <!-- Upload Card -->
+    <div class="card" id="upload-card">
+        <h2>1. Select Simulation Files</h2>
+
+        <div class="upload-area" id="drop-zone" onclick="document.getElementById('file-input').click()">
+            <p>Click or drag files here to upload</p>
+        </div>
+        <input type="file" id="file-input" multiple class="hidden" />
+
+        <ul class="file-list" id="file-list"></ul>
+
+        <button class="btn" id="submit-btn" onclick="submitSimulation()" disabled>
+            Submit Simulation
+        </button>
+    </div>
+
+    <!-- Status Card -->
+    <div class="card hidden" id="status-card">
+        <h2>2. Simulation Status</h2>
+
+        <div class="status-bar" id="status-bar">
+            <div class="spinner" id="status-spinner"></div>
+            <span id="status-text"></span>
+        </div>
+
+        <p style="font-size:0.85rem; color:#888;" id="task-id-display"></p>
+    </div>
+
+    <!-- Results Card -->
+    <div class="card hidden" id="results-card">
+        <h2>3. Results</h2>
+        <ul class="results-list" id="results-list"></ul>
+
+        <button class="btn" style="margin-top:1rem" onclick="resetForm()">
+            Run Another Simulation
+        </button>
+    </div>
+
+    <script src="{{ url_for('static', path='/app.js') }}"></script>
+
+</body>
+
+</html>

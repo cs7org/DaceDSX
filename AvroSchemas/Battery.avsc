@@ -1,0 +1,11 @@
+{
+   "namespace": "eu.fau.cs7.daceDS.datamodel",
+   "type": "record",
+   "name": "PV",
+   "fields": [
+      {"name": "power", "type": "float"},
+      {"name": "current", "type": "float"},
+      {"name": "voltage", "type": "float"},
+      {"name": "soc", "type": "float"}
+   ]
+}

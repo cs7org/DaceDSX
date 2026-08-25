@@ -28,6 +28,7 @@ from pathlib import Path
 import pandas as pd
 import pandapower as pp
 import json
+import time
 
 pd.options.mode.chained_assignment = None
 
@@ -36,7 +37,7 @@ class pandapowerAPI(object):
     """ Class representing the surrounding environment """
 
     def __init__(self, network_path, timesync, consumer, producer, scenarioID, other_instance_topics, instanceID,
-                 step_length=3600, simulationEnd=24, w="", wcb=None, to_observe=None, parameters=[]):
+                 step_length=3600, simulationEnd=24, w="", wcb=None, to_observe=None, parameters=[], translator_consumer=None):
         # print("\n\n_____init_____\n\n", flush=True)
         if to_observe is None:
             to_observe = []
@@ -65,6 +66,9 @@ class pandapowerAPI(object):
         self.timeSync = timesync
         self.to_observe = to_observe
         self.buses_at_cut = []
+
+        self.translator_consumer = translator_consumer
+        self.translator_msg_queue = []
 
     def build_network(self, data):
         net = pp.create_empty_network(
@@ -139,7 +143,6 @@ class pandapowerAPI(object):
             self.network = pp.from_pickle(str(p))
         else:
             raise RuntimeError(f"Unsupported format: {ext}")
-
         folder = p.parent
         load_csv, load_json = folder / "load_profile.csv", folder / "load_profile.json"
         sgen_csv, sgen_json = folder / "sgen_profile.csv", folder / "sgen_profile.json"
@@ -153,7 +156,6 @@ class pandapowerAPI(object):
                     self.load_profile.index = self.load_profile.index.astype(int)
                 except:
                     pass
-
         if sgen_csv.exists():
             self.sgen_profile = pd.read_csv(sgen_csv, index_col=0)
         elif sgen_json.exists():
@@ -170,11 +172,18 @@ class pandapowerAPI(object):
         line_names = [f"line_{i}" for i in self.network.line.index]
         trafo_names = [f"trafo_{i}" for i in self.network.trafo.index] if hasattr(self.network, 'trafo') else []
 
-        self.bus_vm = pd.DataFrame(index=range(self.n_steps), columns=bus_names, dtype=float)
-        self.bus_va = pd.DataFrame(index=range(self.n_steps), columns=bus_names, dtype=float)
-        self.line_p = pd.DataFrame(index=range(self.n_steps), columns=line_names, dtype=float)
-        self.trafo_p = pd.DataFrame(index=range(self.n_steps), columns=trafo_names, dtype=float)
+        # self.bus_vm = None
+        # self.bus_va = None
+        # self.line_p = None
+        # self.trafo_p = None
 
+        try:
+            self.bus_vm = pd.DataFrame(index=range(self.n_steps), columns=bus_names, dtype=float)
+            self.bus_va = pd.DataFrame(index=range(self.n_steps), columns=bus_names, dtype=float)
+            self.line_p = pd.DataFrame(index=range(self.n_steps), columns=line_names, dtype=float)
+            self.trafo_p = pd.DataFrame(index=range(self.n_steps), columns=trafo_names, dtype=float)
+        except:
+            pass
         self.three_phase = False
         try:
             if self.parameters["three_phase"] == "True" or self.parameters["three_phase"] == "true":
@@ -195,18 +204,47 @@ class pandapowerAPI(object):
                 print("No copy buses given")
         topics = []
         topics_to_create = []
+        for bus in self.to_observe:
+            topics_to_create.append(self.get_topic(bus))
+        translator_topics = []
+        for tpc in self.other_instance_topics:
+            print(tpc)
+            if str(tpc).endswith(".translator."):
+                for bus in self.buses_at_cut:
+                    translator_topics.append(tpc+str(bus).replace(" ", "_"))
+                    topics_to_create.append(tpc + str(bus).replace(" ", "_"))
         for ghost in self.buses_at_cut:
             topics_to_create.append(self.get_topic(ghost))
             for topic in self.get_ghost_topics(ghost):
                 if self.producer.topic_exists(topic):
                     topics.append(topic)
+        print("topics_to_create",topics_to_create)
+        print("topics", topics)
         if topics_to_create:
             self.producer.create_topics(topics_to_create)
         if topics:
+            self.wait_for_topic(self.consumer, topics[0])
             self.consumer.subscribe(topics)
+        if translator_topics:
+            self.wait_for_topic(self.translator_consumer,translator_topics[0])
+            self.translator_consumer.subscribe(translator_topics)
         self.buses = {}
         for bus in self.network.bus.iterrows():
             self.buses[self.network.bus.name[bus[0]]] = bus[0]
+
+    def wait_for_topic(self, consumer, topic, timeout=10):
+        start = time.time()
+        while time.time() - start < timeout:
+            meta = consumer.list_topics()
+            print(meta.keys(), topic, topic in meta.keys(), flush=True)
+            if topic in meta.keys():
+                return True
+            time.sleep(0.5)
+        return False
+
+    def on_translator_msg(self, inMsg):
+        """Wird von processMsg im Wrapper aufgerufen"""
+        self.translator_msg_queue.append(inMsg)
 
     def prepareStep(self, step):
         print("____prepareStep____", flush=True)
@@ -229,6 +267,22 @@ class pandapowerAPI(object):
                             self.network.sgen.at[idx, 'p_mw'] = float(val)
                     except:
                         pass
+        translator_msgs= []
+        # while len(self.translator_msg_queue) < 4:
+        #     time.sleep(1)
+        #     print("current msg count:", len(self.translator_msg_queue), flush=True)
+        translator_msgs = self.translator_msg_queue.copy()
+        self.translator_msg_queue.clear()
+        msg = self.translator_consumer.poll(10)
+        while msg:
+            translator_msgs.append(msg)
+            self.timeSync.notifiyAboutReceivedMessage(msg.topic())
+            msg = self.translator_consumer.poll(3)
+        print("translator_msgs", translator_msgs, flush=True)
+        for msg in translator_msgs:
+            content = msg.value()
+            self.set_values_pp(False, self.buses[content["name"]], float(content["v_mag_pu"]), float(content['v_ang']),
+                               float(content["p"]), float(content["q"]))
 
     def step(self, step):
         print("____step____", flush=True)
@@ -255,13 +309,19 @@ class pandapowerAPI(object):
     def set_values_pp(self, ex, bus, v_mag, v_ang, p, q):
         print("____set_values_pp____", flush=True)
         if ex:
+            print("------if EX -----------")
             self.network.ext_grid.vm_pu[0] = v_mag
             self.network.ext_grid.va_degree[0] = v_ang
         else:
-            for elem in pp.toolbox.get_connected_elements(self.network, "sgen", self.buses[bus]):
-                if self.network.sgen.name[elem] == bus + "_gen":
-                    self.network.asymmetric_sgen.p_mw[elem] = p
-                    self.network.asymmetric_sgen.q_mvar[elem] = q
+            print("---------SGEN----------", self.buses, bus)
+            for elem in pp.toolbox.get_connected_elements(self.network, "sgen", bus):
+                if self.network.sgen.name[elem] == str(bus) + "_gen":
+                    try:
+                        self.network.asymmetric_sgen.p_mw[elem] = p
+                        self.network.asymmetric_sgen.q_mvar[elem] = q
+                    except:
+                        self.network.sgen.p_mw[elem] = p
+                        self.network.sgen.q_mvar[elem] = q
 
     def processStep(self, step):
         print("____processStep____", flush=True)
@@ -270,34 +330,39 @@ class pandapowerAPI(object):
             topic = self.get_topic(bus)
             value = self.get_bus(bus, step)
             msg = self.producer.produce(topic, value)
+            self.timeSync.notifiyAboutSentMessage(topic)
         for i, idx in enumerate(self.network.bus.index):
-            col = self.bus_vm.columns[i]
-            try:
-                self.bus_vm.at[step, col] = self.network.res_bus.at[idx, 'vm_pu']
-                self.bus_va.at[step, col] = self.network.res_bus.at[idx, 'va_degree']
-            except:
-                pass
+            if self.bus_vm is not None:
+                col = self.bus_vm.columns[i]
+                try:
+                    self.bus_vm.at[step, col] = self.network.res_bus.at[idx, 'vm_pu']
+                    self.bus_va.at[step, col] = self.network.res_bus.at[idx, 'va_degree']
+                except:
+                    pass
 
         for i, idx in enumerate(self.network.line.index):
-            col = self.line_p.columns[i]
-            try:
-                self.line_p.at[step, col] = self.network.res_line.at[idx, 'p_from_mw']
-            except:
-                pass
+            if self.line_p is not None:
+                col = self.line_p.columns[i]
+                try:
+                    self.line_p.at[step, col] = self.network.res_line.at[idx, 'p_from_mw']
+                except:
+                    pass
 
         if hasattr(self.network, 'res_trafo'):
             for i, idx in enumerate(self.network.trafo.index):
-                col = self.trafo_p.columns[i]
-                try:
-                    self.trafo_p.at[step, col] = self.network.res_trafo.at[idx, 'p_hv_mw']
-                except:
-                    pass
+                if self.trafo_p is not None:
+                    col = self.trafo_p.columns[i]
+                    try:
+                        self.trafo_p.at[step, col] = self.network.res_trafo.at[idx, 'p_hv_mw']
+                    except:
+                        pass
 
         self.history.append({'step': step})
 
     def postStep(self, step, timeInMS=0):
         print("___postStep___", flush=True)
-        msg = self.consumer.poll(5)
+        msg= None
+        # msg = self.consumer.poll(10)
         if self.buses_at_cut:
             do_step = True
         else:    
@@ -311,7 +376,8 @@ class pandapowerAPI(object):
             got_message = False
             while msg:
                 msgs.append(msg)
-                msg = self.consumer.poll(1)
+                # msg = self.consumer.poll(1)
+            print("msgs", msgs, flush=True)
             if msgs:
                 got_message = True
                 change = False
@@ -373,6 +439,7 @@ class pandapowerAPI(object):
                         if abs(v_diff) > 1e-8 or abs(p_diff) > 1e-8 or abs(q_diff) > 1e-8:
                             self.set_values_pp(ex, self.buses[copy_bus], overlap_v_mag_pu, float(msg.value()['v_ang']),
                                                overlap_p, overlap_q)
+                            print("_after_set_values________")
                             change = True
                         else:
                             do_step = False
@@ -380,7 +447,7 @@ class pandapowerAPI(object):
                 print("do_step", do_step, change)
             send_msgs = False
             if (do_step or change) and got_message:
-                self.timeSync.timeAdvance(0)
+                # self.timeSync.timeAdvance(0)
                 self.step(step)
                 print("DOING STEP", flush=True)
                 self.processStep(step)
@@ -388,12 +455,12 @@ class pandapowerAPI(object):
                 do_step = True
                 send_msgs = True
             msgs = []
-            msg = self.consumer.poll(5)
+            # msg = self.consumer.poll(5)
             if msg:
                 msgs.append(msg)
                 do_step = True
                 if not send_msgs:
-                    self.timeSync.timeAdvance(0)
+                    # self.timeSync.timeAdvance(0)
                     self.step(step)
                     print("send_msgs", flush=True)
                     self.processStep(step)
@@ -411,13 +478,17 @@ class pandapowerAPI(object):
 
     def get_bus(self, bus_name, snapshot):
         print("____get_bus____", flush=True)
+        # print(self.buses)
         power_system = {}
         try:
             power_system["name"] = str(bus_name)
             p = 0
             q = 0
+            power_system["control"] = "PQ"
+
             for elem in pp.toolbox.get_connected_elements(self.network, "ext_grid", self.buses[bus_name]):
                 power_system["control"] = str("Slack")
+                print("__getting p and q for slack three phase:", self.three_phase)
                 if self.three_phase:
                     p = float(self.network.res_ext_grid_3ph.p_a_mw[0] + self.network.res_ext_grid_3ph.p_b_mw[0] +
                               self.network.res_ext_grid_3ph.p_c_mw[0])
@@ -426,13 +497,15 @@ class pandapowerAPI(object):
                 else:
                     p = float(self.network.res_ext_grid.p_mw[0])
                     q = float(self.network.res_ext_grid.q_mvar[0])
-
             for elem in pp.toolbox.get_connected_elements(self.network, "sgen", self.buses[bus_name]):
-                if self.network.sgen.name[elem] == self.buses[bus_name] + "_gen":
+                print("__getting p and q for sgen three phase:", self.three_phase)
+                if self.network.sgen.name[elem] == str(self.buses[bus_name]) + "_gen":
                     power_system["control"] = str("PQ")
                     p = float(self.network.res_sgen.p_mw[0])
                     q = float(self.network.res_sgen.q_mvar[0])
+
             for elem in pp.toolbox.get_connected_elements(self.network, "asymmetric_sgen", self.buses[bus_name]):
+                print("__getting p and q for asymmetric_sgen three phase:", self.three_phase)
                 if self.network.asymmetric_sgen.name[elem] == self.buses[bus_name] + "_gen":
                     power_system["control"] = str("PQ")
                     p = float(self.network.res_asymmetric_sgen.p_a_mw[0] + self.network.res_asymmetric_sgen.p_b_mw[0] +
@@ -441,6 +514,7 @@ class pandapowerAPI(object):
                               self.network.res_asymmetric_sgen.q_c_mvar[0])
             power_system["p"] = str(p)
             power_system["q"] = str(q)
+            print("__getting vs __")
             if self.three_phase:
                 power_system["v_mag_pu"] = str(self.network.res_bus_3ph.vm_a_pu[self.buses[bus_name]])
                 power_system["v_ang"] = str(self.network.res_bus_3ph.va_a_degree[self.buses[bus_name]])
@@ -451,6 +525,7 @@ class pandapowerAPI(object):
         except Exception as e:
             print("failed to get bus system", flush=True)
             print(e)
+        print("power_system", power_system)
         return power_system
 
     # todo: add parameterization for multiple observers
@@ -460,10 +535,12 @@ class pandapowerAPI(object):
             topic = self.get_topic(bus)
             value = self.get_bus(bus, snapshot)
             msg = self.producer.produce(topic, value)
+            self.timeSync.notifiyAboutSentMessage(topic)
+
 
     def get_topic(self, string):
         print("____get_topic____", flush=True)
-        return ("provision.simulation." + self.scenarioID + ".energy." + self.instanceID + '.' + string).replace(" ",
+        return ("provision.simulation." + self.scenarioID + ".energy.Bus." + self.instanceID + '.' + string).replace(" ",
                                                                                                                  "_")
 
     def extract_network(self, responsibility):
@@ -490,7 +567,7 @@ class pandapowerAPI(object):
         for bus in self.network.bus.iterrows():
             if self.network.bus.name[bus[0]] in self.buses_at_cut:
                 if not pp.toolbox.get_connected_elements(self.network, "ext_grid", bus[0]):
-                    pp.create_sgen(self.network, self.network.bus.loc[bus[0]], p_mw=0)
+                    pp.create_sgen(self.network, bus[0], p_mw=0, name=str(bus[0])+"_gen")
 
     def destroy(self):
         """Destroys all actors"""
@@ -529,10 +606,10 @@ class pandapowerAPI(object):
                 "q1": q0
             })
 
-            df_bus = pd.DataFrame(bus_rows)
-            df_line = pd.DataFrame(line_rows)
+        df_bus = pd.DataFrame(bus_rows)
+        df_line = pd.DataFrame(line_rows)
 
-            with pd.ExcelWriter(f"../_data/results/powerflow_results_{self.scenarioID}_{self.instanceID}.xlsx",
-                                engine="openpyxl") as writer:
-                df_bus.to_excel(writer, sheet_name="Bus", index=False)
-                df_line.to_excel(writer, sheet_name="Line", index=False)
+        with pd.ExcelWriter(f"../_data/results/powerflow_results_{self.scenarioID}_{self.instanceID}.xlsx",
+                            engine="openpyxl") as writer:
+            df_bus.to_excel(writer, sheet_name="Bus", index=False)
+            df_line.to_excel(writer, sheet_name="Line", index=False)

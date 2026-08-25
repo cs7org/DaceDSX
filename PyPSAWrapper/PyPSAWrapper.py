@@ -42,7 +42,7 @@ print("HERE", config["general"])
 broker = config["general"]["kafkaBroker"]
 registry = config["general"]["schemaRegistry"]
 baseDir = "/daceDS/CarlaWrapper/tmp/"
-energySchemaPath = this_directory+"/../AvroSchemas/bus.avsc"
+energySchemaPath = this_directory+"/../AvroSchemas/Bus.avsc"
 
 import json
 

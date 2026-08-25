@@ -1,0 +1,9 @@
+PV:
+  Description: A Bus is a electricity grid component.
+  NearestOntologyConcept: https://openenergyplatform.org/ontology/oeo/OEO_00000144
+  Attributes:
+    power_ac:
+      Description: The active power is the product of the voltage across a branch of an alternating-current circuit and the component of the electric current that is in phase with the voltage.
+      NearestOntologyConcept: Power
+      Unit: W
+      Type: float

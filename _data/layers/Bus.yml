@@ -1,0 +1,34 @@
+Bus:
+  Description: A Bus is a electricity grid component.
+  NearestOntologyConcept: https://openenergyplatform.org/ontology/oeo/OEO_00000144
+  Attributes:
+    name:
+      Description: The control type is the control strategy of the bus. It can be Slack, PQ or PV.
+      NearestOntologyConcept: Name
+      Unit: string
+      Type: str
+    v_mag_pu:
+      Description: The voltage magnitude per unit is the voltage at a bus expressed relative to a chosen reference voltage.
+      NearestOntologyConcept: Voltage Magnitude
+      Unit: None
+      Type: str
+    v_ang:
+      Description: The voltage angle at a bus is the phase difference between the bus voltage and a chosen reference voltage, usually expressed in degrees or radians.
+      NearestOntologyConcept: Voltage Angle
+      Unit: radians
+      Type: str
+    p:
+      Description: The active power is the product of the voltage across a branch of an alternating-current circuit and the component of the electric current that is in phase with the voltage.
+      NearestOntologyConcept: Power
+      Unit: MW
+      Type: str
+    q:
+      Description: The reactive power is the portion of electricity that establishes and sustains the electric and magnetic fields of alternating-current equipment.
+      NearestOntologyConcept: Reactive Power
+      Unit: MW
+      Type: str
+    control:
+      Description: The control type is the control strategy of the bus. It can be Slack, PQ or PV.
+      NearestOntologyConcept: Control
+      Unit: string
+      Type: str

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+	This program is free software: you can redistribute it and/or modify
+    	it under the terms of the GNU General Public License as published by
+   	the Free Software Foundation, either version 3 of the License, or
+    	(at your option) any later version.
+-->
+<configuration>
+	<input>
+		
+		<net-file value="manhattengrid.net.xml"/>
+		
+	</input>
+
+	<input>
+		<route-files value="manhatten_48.rou.xml"/>
+	</input>
+	<output>
+		<summary-output value="manhattengrid.simulation.summary.xml"/>
+		<tripinfo-output value="manhattengrid.simulation.tripinfo.xml"/>
+		<statistic-output value="manhattengrid.simulation.statistic.xml"/>
+	</output>
+	<time>
+		<!--<begin value="0"/>-->
+		<step-length value="0.1"/>
+		<!--<end value="86400"/>-->
+	</time>
+	<!--
+	<processing>
+		<route-steps value="200"/>
+		<threads value="10"/>
+		<ignore-junction-blocker value="1500"/>
+	    	<time-to-teleport value="30000"/>
+		<time-to-teleport.highways value="3000"/>
+        	<max-depart-delay value="3000"/>
+		<default.carfollowmodel value="Krauss"/>
+	</processing>
+	-->
+
+	<report>
+        	<verbose value="true"/>
+		<no-warnings value="false"/>
+	        <log value="manhattengrid.simulation.log"/>
+	</report>
+</configuration>

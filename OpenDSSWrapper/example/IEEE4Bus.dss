@@ -1,0 +1,43 @@
+! IEEE 4-Bus Test Feeder
+Clear
+
+! Define the circuit (this creates a default source)
+New Circuit.IEEE4Bus basekv=12.47 pu=1.0 phases=3 bus1=sourcebus
+
+! Configure the source (using Edit, not New)
+Edit Vsource.source basekv=12.47 pu=1.0 phases=3
+~ sequence=positive
+
+! Line 1: Source to Bus 2 (2000 ft)
+New Line.Line1 bus1=sourcebus bus2=bus2 phases=3
+~ length=2000 units=ft
+~ r1=0.0580 x1=0.1206 r0=0.1784 x0=0.4047
+~ c1=3.4 c0=1.6 normamps=400 emergamps=600
+~ basefreq=60
+
+! Transformer: 12.47 kV (delta) to 4.16 kV (wye grounded)
+New Transformer.Transformer1 phases=3 windings=2
+~ xhl=6.0 %loadloss=0.0
+~ wdg=1 bus=bus2 conn=delta kv=12.47 kva=6000 %r=0.5
+~ wdg=2 bus=bus3 conn=wye kv=4.16 kva=6000 %r=0.5
+
+! Line 2: Bus 3 to Bus 4 (2500 ft)
+New Line.Line2 bus1=bus3 bus2=bus4 phases=3
+~ length=2500 units=ft
+~ r1=0.0580 x1=0.1206 r0=0.1784 x0=0.4047
+~ c1=3.4 c0=1.6 normamps=400 emergamps=600
+~ basefreq=60
+
+! Load at Bus 4
+New Load.Load1 bus1=bus4 phases=3 conn=wye
+~ kv=4.16 kw=1800 kvar=600 model=1
+
+! Set voltage bases
+Set voltagebases=[12.47, 4.16]
+Calcvoltagebases
+
+! Solution settings
+Set mode=snapshot
+Set frequency=60
+
+Solve

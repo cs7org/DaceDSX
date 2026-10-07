@@ -1,0 +1,19 @@
+{
+  "simulationEnd": 3600000,
+  "buildingBlocks": [{
+    "instanceID": "opendss0",
+    "type": "OpenDSSWrapper",
+    "stepLength": 1000,
+    "resources": {"IEEE4Bus.dss": "Network"},
+    "responsibilities": ["*"],
+    "observers": [
+      {"task": "publish", "element": "bus", "filter": "bus2, bus3, bus4"}
+    ],
+    "parameters": {
+      "copy_buses": "bus2, bus3, bus4",
+      "base_kw": 1800,
+      "base_kvar": 600
+    }
+  }],
+  "execution": {"syncedParticipants": ["opendss0"]}
+}

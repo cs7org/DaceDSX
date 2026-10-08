@@ -27,7 +27,7 @@ void MessageHandler::processBuffer(int time, int epoch){
 
 		KDBGCB("processing buffer for timeepoch " << t);
 
-		for (std::set<ConsumedMessage*>::iterator it = buffer.begin(); it != buffer.end(); ){
+		for (std::multiset<ConsumedMessage*, cm_compare>::iterator it = buffer.begin(); it != buffer.end(); ){
 
             ConsumedMessage* msg = *it;
             

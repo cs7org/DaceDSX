@@ -48,7 +48,6 @@ class MessageHandler {
 
     struct cm_compare {
         bool operator() (const ConsumedMessage* a, const ConsumedMessage* b) const {
-            return 1;
             if(a->st == b->st) {
                 if(a->topic == b->topic) { 
                     if(a->key == b->key) { 
@@ -63,8 +62,9 @@ class MessageHandler {
         }
     };
 
-    std::set<ConsumedMessage*, cm_compare> buffer;
+    std::multiset<ConsumedMessage*, cm_compare> buffer;
     bool bufferConsumedMessage(ConsumedMessage* msg);
+    // TODO: int narrowing, callers pass int64_t time
     void processBuffer(int time, int epoch);
 };
 }  // namespace daceDS

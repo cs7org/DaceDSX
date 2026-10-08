@@ -10,6 +10,7 @@ In 2025, it has been relicensed under the MIT License (https://choosealicense.co
 using namespace daceDS;
 
 std::map<std::string, int64_t> Consumer::countingReceiveCounter;
+std::mutex Consumer::countingMutex;
 std::vector<std::string> Consumer::countingExpectedTopics;
 std::vector<std::string> Consumer::countingExpectedPatterns;
 
@@ -54,9 +55,12 @@ bool Consumer::process(ConsumedMessage* cmsg) {
     std::string topic = cmsg->topic;
     bool suc = handler->bufferConsumedMessage(cmsg);
     // std::string topic = getExpectation(cmsg.topic);
-    if (Consumer::countingReceiveCounter.count(topic) == 0)
-        Consumer::countingReceiveCounter[topic] = 0;
-    Consumer::countingReceiveCounter[topic]++;
+    {
+        std::lock_guard<std::mutex> lock(countingMutex);
+        if (Consumer::countingReceiveCounter.count(topic) == 0)
+            Consumer::countingReceiveCounter[topic] = 0;
+        Consumer::countingReceiveCounter[topic]++;
+    }
 
     if (timeSync) {
         timeSync->tick();

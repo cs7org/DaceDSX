@@ -50,9 +50,9 @@ bool Consumer::process(ConsumedMessage* cmsg) {
         return suc;
     }
 
-    bool suc = handler->bufferConsumedMessage(cmsg);
-
+    // read the topic before handing the message over, the buffer may delete it on another thread
     std::string topic = cmsg->topic;
+    bool suc = handler->bufferConsumedMessage(cmsg);
     // std::string topic = getExpectation(cmsg.topic);
     if (Consumer::countingReceiveCounter.count(topic) == 0)
         Consumer::countingReceiveCounter[topic] = 0;

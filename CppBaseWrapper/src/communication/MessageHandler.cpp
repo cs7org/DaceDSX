@@ -8,39 +8,35 @@ In 2025, it has been relicensed under the MIT License (https://choosealicense.co
 */
 
 #include "MessageHandler.h"
+#include <vector>
 using namespace daceDS;
 
 std::mutex bufmutex;
 
 bool MessageHandler::bufferConsumedMessage(ConsumedMessage* msg) {
-    // std::unique_lock<std::mutex> lock(bufmutex);
+    std::unique_lock<std::mutex> lock(bufmutex);
     buffer.insert(msg);
-    // lock.unlock();
+    lock.unlock();
     return true;
 }
 
 /*process everything that is older than time.epoch*/
 void MessageHandler::processBuffer(int time, int epoch){
 
-        // std::unique_lock<std::mutex> lock(bufmutex);
     	int64_t t = ((int64_t)1000)*time+epoch;
 
 		KDBGCB("processing buffer for timeepoch " << t);
 
+        //move due messages out under the lock, handle them unlocked (handlers may call back into the consumer)
+        std::vector<ConsumedMessage*> due;
+        std::unique_lock<std::mutex> lock(bufmutex);
 		for (std::multiset<ConsumedMessage*, cm_compare>::iterator it = buffer.begin(); it != buffer.end(); ){
 
             ConsumedMessage* msg = *it;
             
             //msg is old enough
             if(msg->st < t){
-                //handle msg
-		        KDBGCB("processing message on " << msg->topic << " at " << msg->st);
-                handle(msg);
-                //and remove it
-                //free(msg->payload);
-                //delete msg;
-                
-                delete msg;
+                due.push_back(msg);
                 it = buffer.erase(it);
             } 
             //skip newer messages
@@ -49,7 +45,14 @@ void MessageHandler::processBuffer(int time, int epoch){
                 it++;
             }
         }	
-        
-    // lock.unlock();	
+        lock.unlock();	
+
+        for (ConsumedMessage* msg : due) {
+            //handle msg
+		    KDBGCB("processing message on " << msg->topic << " at " << msg->st);
+            handle(msg);
+            //and remove it
+            delete msg;
+        }
 }
 

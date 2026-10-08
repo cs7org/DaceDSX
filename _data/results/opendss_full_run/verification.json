@@ -1,8 +1,0 @@
-{
-  "bus_records": 40,
-  "snapshots": 10,
-  "all_numeric_values_finite": true,
-  "windows_vs_kafka_max_absolute_difference": 2.2160051571518125e-13,
-  "comparison_tolerance": 1e-08,
-  "failure_reporting_verified": true
-}

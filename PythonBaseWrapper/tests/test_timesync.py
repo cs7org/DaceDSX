@@ -27,5 +27,16 @@ class SentMessageCountingTest(unittest.TestCase):
         self.assertEqual(timeSync.getSentMsgDiff(), {})
 
 
+class ProcessSyncMsgTest(unittest.TestCase):
+    def test_every_announced_topic_matching_pattern_is_expected(self):
+        timeSync = TimeSync('broker', 'registry', 'sync', 'me', logging=False)
+        timeSync.addExpectedPattern(r'^data\.')
+        timeSync.processSyncMsg(syncMsg('peer', 'join'))
+        timeSync.processSyncMsg(syncMsg('peer', 'request', time=10,
+                                        messages={'data.a': 1, 'other': 1, 'data.b': 2}))
+        self.assertEqual(timeSync.expectedReceiveCount, {'data.a': 1, 'data.b': 2})
+        self.assertEqual(timeSync.lbts, 10)
+
+
 if __name__ == '__main__':
     unittest.main()

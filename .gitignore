@@ -3,3 +3,11 @@ results/*
 __pycache__/
 target/
 docker-compose.yml
+.venv-pypsa/
+OpenDSSWrapper/.venv/
+OpenDSSWrapper/.venv-linux/
+OpenDSSWrapper/logs/
+_data/runtime/
+/_data/results/*
+!/_data/results/.gitkeep
+.idea/

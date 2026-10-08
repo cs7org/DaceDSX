@@ -19,11 +19,17 @@ syncMsgSchemaPath = this_directory+"/../../../AvroSchemas/SyncMsg.avsc"
 import time
 
 import re
+import math
 
 
 class TimeSync():
     
-    def __init__(self, broker, registry, topic, myID, initNoParticipants=2, logging=True, timeoutHandler=None):    
+    def __init__(self, broker, registry, topic, myID, initNoParticipants=2, logging=True, timeoutHandler=None,
+                 waitTimeout=None, progressHandler=None):
+        if waitTimeout is not None and (not math.isfinite(waitTimeout) or waitTimeout <= 0):
+            raise ValueError("waitTimeout must be finite and positive")
+        self.waitTimeout = waitTimeout
+        self.progressHandler = progressHandler
         self.myID = myID
         self.topic = topic
         self.joinStr = {
@@ -40,8 +46,11 @@ class TimeSync():
         
         # self.producer = KafkaProducerKafkian(broker, registry, myID, useAvro=True, schemaPath=syncMsgSchemaPath)
         # self.consumer = KafkaConsumerKafkian(broker, registry, [self.topic], myID)
-        self.producer = KafkaProducer(broker, registry, myID, useAvro=True, schemaPath=syncMsgSchemaPath)
-        self.consumer = KafkaConsumer(broker, registry, [self.topic], myID)
+        producer_options = {} if waitTimeout is None else {'deliveryTimeout': waitTimeout}
+        consumer_options = {} if waitTimeout is None else {'strict': True, 'requestTimeout': waitTimeout}
+        self.producer = KafkaProducer(broker, registry, myID, useAvro=True, schemaPath=syncMsgSchemaPath,
+                                      **producer_options)
+        self.consumer = KafkaConsumer(broker, registry, [self.topic], myID, **consumer_options)
 
         self.lbts = 0
         self.currentLocalTime = 0
@@ -94,13 +103,13 @@ class TimeSync():
                         self.expectedReceiveCount[topic] = msg['Messages'][topic]
                         self.inferedTopics.append(topic)
                         self.refreshLBTS()
-                        return
+                        break
                     else:
                         if(self.logging == True):
                             print(topic,"does not match pattern: " + pattern.pattern, flush=True)
                          
                 #neither pattern nor topic list is matching                    
-                if(self.logging == True):
+                if(self.logging == True and topic not in self.expectedReceiveCount):
                     print("ignoring " + topic + ("is not in my list of interest"), flush=True)
                     print("currently in interest list:")
                     for t in self.expectedReceiveCount:
@@ -187,19 +196,20 @@ class TimeSync():
                                         
     def joinTiming(self):  
         errorCount = 0
+        started = time.monotonic()
         self.producer.produce(topic=self.topic, value=self.joinStr)
         while(len(self.participants) < self.initNoParticipants):
-            print("waiting for others to join: ", len(self.participants),'/', self.initNoParticipants, flush=True)
+            self._waitProgress(started, "participants to join")
+            if self.logging:
+                print("waiting for others to join: ", len(self.participants),'/', self.initNoParticipants, flush=True)
             msg = self.consumer.poll(.1)
             if(msg != None):
-                print("topic",msg.topic())
-                print("value",msg.value())
                 self.processSyncMsg(msg.value())
             errorCount+=1
             
             # if (errorCount%103==0):
             #     self.producer.produce(topic=self.topic, value=self.joinStr)
-            if (errorCount%5==0 and len(self.participants) == 0):
+            if (self.waitTimeout is None and errorCount%5==0 and len(self.participants) == 0):
                 self.consumer.stop()
                 time.sleep(1)
                 self.consumer = KafkaConsumer(self.broker, self.registry, [self.topic], self.myID+str(errorCount))
@@ -209,6 +219,7 @@ class TimeSync():
     
     def timeAdvance(self, timestep):
         t=self.currentLocalTime + timestep
+        started = time.monotonic()
         
         syncmsg = {
         'Sender' : self.myID,
@@ -224,6 +235,7 @@ class TimeSync():
                 
         #wait until others are ready
         while True:
+            self._waitProgress(started, "time grant")
             if (self.timeOK(t)):
                 break
             try:
@@ -236,11 +248,14 @@ class TimeSync():
                     print("> > > received in ", self.topic, inMsg.value(), flush=True)
                 self.processSyncMsg(inMsg.value())
             except Exception as e:
+                if self.waitTimeout is not None:
+                    raise
                 #self.consumer = KafkaConsumer(self.broker, self.registry, [self.topic], self.myID)
                 print("timeAdvanceException",e, flush=True)
                 
         #wait until received all announced messages
         while True:
+            self._waitProgress(started, "announced messages")
             # print("self.msgCountOK()", flush=True)
             if self.msgCountOK():
                 break
@@ -250,13 +265,19 @@ class TimeSync():
         # print("currentLocalTime is",t, flush=True)
 
 
+    def _waitProgress(self, started, reason):
+        if self.waitTimeout is not None and time.monotonic() - started >= self.waitTimeout:
+            raise TimeoutError("TimeSync timed out waiting for " + reason)
+        if self.progressHandler is not None:
+            self.progressHandler()
+
     def leaveTiming(self):
         msg = {}
         msg['Sender'] = self.myID
         msg['Action'] = 'leave'
         msg['Time'] = -1
         msg['Epoch'] = 0
-        msg['Messages'] =  {}
+        msg['Messages'] = {}
         self.producer.produce(topic=self.topic, value=msg)
 
 
@@ -273,5 +294,3 @@ class TimeSync():
         else:
             self.actualReceivedMsgCount[topic] += count
         print("received",self.actualReceivedMsgCount[topic],"messages in",topic)
-
-

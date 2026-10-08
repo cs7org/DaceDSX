@@ -1,0 +1,41 @@
+! Synthetic balanced four-bus demonstration (not an IEEE benchmark).
+Clear
+
+! Define the circuit (this creates a default source)
+New Circuit.FourBusDemo basekv=12.47 pu=1.0 phases=3 bus1=sourcebus
+
+! Configure the source (using Edit, not New)
+Edit Vsource.source basekv=12.47 pu=1.0 phases=3
+~ sequence=positive
+
+! Explicit line-code units: impedance is ohm/kft, capacitance nF/kft.
+New LineCode.demo nphases=3 r1=0.0580 x1=0.1206 r0=0.1784 x0=0.4047
+~ c1=3.4 c0=1.6 units=kft basefreq=60
+
+! Line 1: Source to Bus 2 (2000 ft)
+New Line.Line1 bus1=sourcebus bus2=bus2 phases=3
+~ linecode=demo length=2000 units=ft normamps=400 emergamps=600
+
+! Transformer: 12.47 kV (delta) to 4.16 kV (wye grounded)
+New Transformer.Transformer1 phases=3 windings=2
+~ xhl=6.0 %loadloss=0.0
+~ wdg=1 bus=bus2 conn=delta kv=12.47 kva=6000 %r=0.5
+~ wdg=2 bus=bus3 conn=wye kv=4.16 kva=6000 %r=0.5
+
+! Line 2: Bus 3 to Bus 4 (2500 ft)
+New Line.Line2 bus1=bus3 bus2=bus4 phases=3
+~ linecode=demo length=2500 units=ft normamps=400 emergamps=600
+
+! Load at Bus 4
+New Load.Load1 bus1=bus4 phases=3 conn=wye
+~ kv=4.16 kw=1800 kvar=600 model=1
+
+! Set voltage bases
+Set voltagebases=[12.47, 4.16]
+Calcvoltagebases
+
+! Solution settings
+Set mode=snapshot
+Set frequency=60
+
+Solve

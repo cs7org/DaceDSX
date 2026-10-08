@@ -1,0 +1,58 @@
+{
+  "execution_mode": "standalone OpenDSS engine",
+  "scenario": "C:\\Users\\nurbek\\Desktop\\DaceDSX\\OpenDSSWrapper\\example\\scenario.json",
+  "steps": 10,
+  "time_ms": [
+    0,
+    1000,
+    2000,
+    3000,
+    4000,
+    5000,
+    6000,
+    7000,
+    8000,
+    9000
+  ],
+  "all_converged": true,
+  "result_rows": 40,
+  "results_file": "C:\\Users\\nurbek\\Desktop\\DaceDSX\\_data\\results\\opendss_run_20261008\\results.csv",
+  "final_bus_results": [
+    {
+      "time_ms": 9000,
+      "name": "sourcebus",
+      "p": "1.8421574131117295",
+      "q": "0.7127408297916595",
+      "v_mag_pu": "0.9994302249438545",
+      "v_ang": "-0.0008076049808640518",
+      "control": "Slack"
+    },
+    {
+      "time_ms": 9000,
+      "name": "bus2",
+      "p": "0.0",
+      "q": "0.0",
+      "v_mag_pu": "0.9969514677983589",
+      "v_ang": "-0.0031416124667937506",
+      "control": "PQ"
+    },
+    {
+      "time_ms": 9000,
+      "name": "bus3",
+      "p": "0.0",
+      "q": "0.0",
+      "v_mag_pu": "0.986935350429954",
+      "v_ang": "-0.5442364596154511",
+      "control": "PQ"
+    },
+    {
+      "time_ms": 9000,
+      "name": "bus4",
+      "p": "-1.7999999999999996",
+      "q": "-0.5999999999999999",
+      "v_mag_pu": "0.9599542059097603",
+      "v_ang": "-0.5720343994538226",
+      "control": "PQ"
+    }
+  ]
+}

@@ -24,6 +24,8 @@
 
 from __future__ import print_function
 
+from pathlib import Path
+
 import pandas as pd
 
 pd.options.mode.chained_assignment = None
@@ -36,7 +38,7 @@ class PyPSAAPI(object):
     """ Class representing the surrounding environment """
 
     def __init__(self, network_path, timesync, consumer, producer, scenarioID, other_instance_topics, instanceID,
-                 step_length=3600, simulationEnd=24, w="", wcb=None, to_observe=None, parameters=[]):
+                 step_length=3600, simulationEnd=24, w="", wcb=None, to_observe=None, parameters=None):
         # print("\n\n_____init_____\n\n", flush=True)
         if to_observe is None:
             to_observe = []
@@ -64,7 +66,7 @@ class PyPSAAPI(object):
         self.timeSync = timesync
         self.to_observe = to_observe
         self.buses_at_cut = []
-        self.parameters = parameters
+        self.parameters = parameters or {}
 
     def init(self, responsibility):
         self.network = pypsa.Network()
@@ -79,8 +81,10 @@ class PyPSAAPI(object):
             self.buses_at_cut = self.get_cuts(responsibility)
             self.extract_network(responsibility, self.buses_at_cut)
         else:
-            self.buses_at_cut = self.parameters["copy_buses"].split(", ")
-            self.create_interface()
+            self.buses_at_cut = [bus.strip() for bus in self.parameters.get("copy_buses", "").split(",")
+                                 if bus.strip()]
+            if self.buses_at_cut:
+                self.create_interface()
         topics = []
         topics_to_create = []
         for ghost in self.buses_at_cut:
@@ -98,16 +102,14 @@ class PyPSAAPI(object):
             self.network.set_snapshots(snapshot)
 
         else:
-            if 'now' not in str(self.snapshots):
-                snap = pd.date_range(self.snapshots[0], self.snapshots[len(snapshot) - 1], periods=len(snapshot))
-                self.network.set_snapshots(snap)
+            self.network.set_snapshots(self.snapshots[:len(snapshot)])
         self.snapshots = self.network.snapshots
 
     def prepareStep(self, step):
         pass
 
     def step(self, step):
-        self.network.pf(snapshots=self.network.snapshots[step], x_tol=1e-11)
+        return self.network.pf(snapshots=self.network.snapshots[step], x_tol=1e-11)
 
     ##################
     ### process the last simulation step. mainly check if vehicles are going to be sent out
@@ -132,6 +134,8 @@ class PyPSAAPI(object):
             self.network.generators.control[ghost_gen] = "PQ"
 
     def postStep(self, step, timeInMS=0):
+        if not self.buses_at_cut:
+            return
         print("In poststep", flush=True)
         msg = self.consumer.poll(5)
         do_step = True
@@ -391,34 +395,36 @@ class PyPSAAPI(object):
         """Destroys all actors"""
         print("todo: destroy()")
 
-    def write_results(self):
+    def write_results(self, output_path=None):
         bus_rows = []
         line_rows = []
 
-        for values in self.network.buses.iterrows():
-            bus_id = values[0]
-            v_mag = self.network.buses_t.v_mag_pu[values[0]]['now']
-            v_ang = self.network.buses_t.v_ang[values[0]]['now']
-            bus_rows.append({
-                "bus": bus_id,
-                "v_mag": v_mag,
-                "v_ang": v_ang
-            })
+        for snapshot in self.network.snapshots:
+            for bus_id in self.network.buses.index:
+                bus_rows.append({
+                    "snapshot": snapshot,
+                    "bus": bus_id,
+                    "v_mag": self.network.buses_t.v_mag_pu.at[snapshot, bus_id],
+                    "v_ang": self.network.buses_t.v_ang.at[snapshot, bus_id],
+                })
+            for line_id in self.network.lines.index:
+                line_rows.append({
+                    "snapshot": snapshot,
+                    "line": line_id,
+                    "p0": self.network.lines_t.p0.at[snapshot, line_id],
+                    "q0": self.network.lines_t.q0.at[snapshot, line_id],
+                    "p1": self.network.lines_t.p1.at[snapshot, line_id],
+                    "q1": self.network.lines_t.q1.at[snapshot, line_id],
+                })
 
-        for values in self.network.lines.iterrows():
-            p0 = self.network.lines_t.p0[values[0]]['now']
-            q0 = self.network.lines_t.q0[values[0]]['now']
-            line_id = values[0]
-            line_rows.append({
-                "line": line_id,
-                "p0": p0,
-                "q1": q0
-            })
-
-            df_bus = pd.DataFrame(bus_rows)
-            df_line = pd.DataFrame(line_rows)
-
-            with pd.ExcelWriter(f"../_data/results/powerflow_results_{self.scenarioID}_{self.instanceID}.xlsx",
-                                engine="openpyxl") as writer:
-                df_bus.to_excel(writer, sheet_name="Bus", index=False)
-                df_line.to_excel(writer, sheet_name="Line", index=False)
+        if output_path is None:
+            output_path = (Path(__file__).resolve().parents[1] / "_data" / "results" /
+                           f"powerflow_results_{self.scenarioID}_{self.instanceID}.xlsx")
+        output_path = Path(output_path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
+            pd.DataFrame(bus_rows, columns=["snapshot", "bus", "v_mag", "v_ang"]).to_excel(
+                writer, sheet_name="Bus", index=False)
+            pd.DataFrame(line_rows, columns=["snapshot", "line", "p0", "q0", "p1", "q1"]).to_excel(
+                writer, sheet_name="Line", index=False)
+        return output_path

@@ -1,0 +1,6 @@
+Smoke test logs and results: /mnt/c/Users/nurbek/Desktop/DaceDSX/_data/results/opendss_full_run
+subscribed to:
+provision.simulation.smoke_f35fed3dd72e4874a8a74ef817939af2.energy.opendss0.bus4
+PASS: Java submission and automatic launch, successful CSV
+PASS: Java submission and automatic launch, failure exit
+Integration smoke test passed

@@ -1,0 +1,36 @@
+WARNING:pypsa.network.io:Importing network from PyPSA version v0.0.0 while current version is v0.35.2. Read the release notes at https://pypsa.readthedocs.io/en/latest/release_notes.html to prepare your network for import.
+INFO:pypsa.network.io:New version 1.3.0 available! (Current: 0.35.2)
+INFO:pypsa.network.io:Imported network '' has buses, generators, lines, loads
+INFO:pypsa.network.power_flow:Performing non-linear load-flow on AC sub-network <pypsa.networks.SubNetwork object at 0x000001470D71FF20> for snapshots Index([1], dtype='int64', name='snapshot')
+buses_at_cut []
+INFO:pypsa.network.power_flow:Performing non-linear load-flow on AC sub-network <pypsa.networks.SubNetwork object at 0x000001470F392840> for snapshots Index([2], dtype='int64', name='snapshot')
+buses_at_cut []
+{
+  "scenario_id": "minimal_network_",
+  "instance_id": "PyPSAWrapper0",
+  "execution_mode": "standalone PyPSA power flow (without Kafka)",
+  "wrapper_api": "PyPSAApi.PyPSAAPI",
+  "scenario_path": "C:\\Users\\nurbek\\Desktop\\DaceDSX\\_data\\scenarios\\minimal_network.json",
+  "network_path": "C:\\Users\\nurbek\\Desktop\\DaceDSX\\_data\\resources\\minimal_network.hdf5",
+  "network_sha256": "01435e0b0cc302e200b1c88f4946f8bff441042bca2e4fe69e577b08d7f6b72d",
+  "python_version": "3.12.14",
+  "pypsa_version": "0.35.2",
+  "simulation_start_ms": 0,
+  "simulation_end_ms": 2,
+  "step_length_ms": 1,
+  "steps": 2,
+  "snapshots": [
+    "1",
+    "2"
+  ],
+  "buses": 2,
+  "lines": 1,
+  "generators": 1,
+  "loads": 1,
+  "all_converged": true,
+  "max_power_flow_error": 5.572449668610535e-13,
+  "min_bus_voltage_pu": 0.9971786062981871,
+  "max_bus_voltage_pu": 1.0,
+  "output_directory": "C:\\Users\\nurbek\\Desktop\\DaceDSX\\_data\\results\\minimal_network",
+  "workbook": "C:\\Users\\nurbek\\Desktop\\DaceDSX\\_data\\results\\minimal_network\\powerflow_results.xlsx"
+}

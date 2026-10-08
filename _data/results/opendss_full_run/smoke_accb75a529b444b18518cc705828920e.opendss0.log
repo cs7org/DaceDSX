@@ -1,0 +1,18 @@
+2026-10-08 09:30:21,438 INFO opendss0: started
+subscribed to:
+provision.simulation.smoke_accb75a529b444b18518cc705828920e.scenario
+2026-10-08 09:30:21,709 INFO opendss0: waiting for resources
+subscribed to:
+provision.simulation.smoke_accb75a529b444b18518cc705828920e.resource
+2026-10-08 09:30:21,923 INFO opendss0: failed
+2026-10-08 09:30:21,924 ERROR OpenDSS scenario failed
+Traceback (most recent call last):
+  File "/mnt/c/Users/nurbek/Desktop/DaceDSX/OpenDSSWrapper/OpenDSSWrapper.py", line 294, in main
+    OpenDSSWrapper(args.scenario_id, args.instance_id, args.config).execute()
+  File "/mnt/c/Users/nurbek/Desktop/DaceDSX/OpenDSSWrapper/OpenDSSWrapper.py", line 268, in execute
+    self.prepare()
+  File "/mnt/c/Users/nurbek/Desktop/DaceDSX/OpenDSSWrapper/OpenDSSWrapper.py", line 171, in prepare
+    self.api.init(self.block["responsibilities"])
+  File "/mnt/c/Users/nurbek/Desktop/DaceDSX/OpenDSSWrapper/OpenDSSApi.py", line 59, in init
+    raise ValueError(f"Unknown observed bus: {name}")
+ValueError: Unknown observed bus: nonexistent_bus

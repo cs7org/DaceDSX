@@ -1,0 +1,43 @@
+OpenDSS execution changes
+
+Installed the pinned OpenDSSWrapper/requirements.txt dependencies in separate
+native Windows (.venv) and WSL (.venv-linux) Python 3.12 environments.
+Installed Maven dependencies and built JavaBaseWrapper and SimService.
+
+Modified existing files:
+- PythonBaseWrapper/src/communication/KafkaProducer.py:
+  optional bounded delivery, registry timeouts, and delivery failure reporting.
+- PythonBaseWrapper/src/communication/KafkaConsumer.py:
+  optional strict errors and registry timeout; tolerate initial missing topics.
+- PythonBaseWrapper/src/communication/AvroProducerConsumer.py:
+  schema-registry factory applies finite HTTP/HTTPS request deadlines.
+- PythonBaseWrapper/src/logic/TimeSync.py:
+  optional bounded waits and progress callbacks; count all announced topics.
+- SimService/.../Utils/SendScenarioObject.java:
+  resolve scenario/resource paths, close writers, and return exit 1 on failed status.
+- JavaBaseWrapper/pom.xml and SimService/pom.xml:
+  update maven-assembly-plugin to 3.7.1 and pin maven-enforcer-plugin to 3.6.3.
+- OpenDSSWrapper/OpenDSSWrapper.py:
+  handle file URI paths correctly on Windows.
+- OpenDSSWrapper/run.sh:
+  select the Linux environment when launched through WSL.
+- OpenDSSWrapper/tests/test_opendss.py:
+  skip the Bash launcher check on native Windows; it runs in WSL.
+- OpenDSSWrapper/tests/integration_smoke.py:
+  configurable scenario duration, all ten snapshot/Kafka checks, stable CSV
+  and JSON summary exports, and verification of failure reporting.
+- .gitignore:
+  ignore OpenDSS environments, wrapper logs, and disposable service runtime data.
+- OpenDSS_Setup.md and OpenDSSWrapper/README.md:
+  corrected installation package, runnable Windows/WSL instructions and outputs.
+
+Added files:
+- OpenDSSWrapper/run_local.py: direct uncoupled scenario runner with CSV/JSON output.
+- OpenDSSWrapper/tools/local_services.py: prepare/start/stop disposable WSL services.
+- OpenDSSWrapper/tools/services-pom.xml: isolated Kafka/Schema Registry dependencies.
+- Result CSVs, summaries, verification, dependency manifests and execution logs
+  under _data/results.
+
+The OpenDSS scenario and FourBus.dss model supplied in the repository were used
+without changing their electrical inputs. The integration verifier assigns a
+fresh scenario ID to its submitted copy, preserving the original scenario file.

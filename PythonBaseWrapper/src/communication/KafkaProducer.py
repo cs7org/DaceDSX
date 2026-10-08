@@ -11,6 +11,7 @@ from confluent_kafka import avro
 import csv
 from confluent_kafka.avro.serializer import SerializerError
 import json
+import math
 
 from AvroProducerConsumer import AvroProducerStrKey
 from confluent_kafka import Producer
@@ -20,7 +21,10 @@ from confluent_kafka.admin import AdminClient, NewTopic
 
 class KafkaProducer():
 
-    def __init__(self, broker, registry, producerID, useAvro=True, schema="", schemaPath=""):
+    def __init__(self, broker, registry, producerID, useAvro=True, schema="", schemaPath="", deliveryTimeout=None):
+        if deliveryTimeout is not None and (not math.isfinite(deliveryTimeout) or deliveryTimeout <= 0):
+            raise ValueError("deliveryTimeout must be finite and positive")
+        self.deliveryTimeout = deliveryTimeout
         self.producerID = producerID
         self.broker = broker
         self.registry = registry
@@ -29,6 +33,9 @@ class KafkaProducer():
                              'enable.idempotence': 'false',
                              'linger.ms': '0'}
         self.admin = AdminClient({'bootstrap.servers': broker})
+        if deliveryTimeout is not None:
+            self.producerConf['message.timeout.ms'] = int(deliveryTimeout * 1000)
+            self.producerConf['schema.registry.request.timeout'] = deliveryTimeout
         if (useAvro):
             if len(schema) > 0:
                 self.producer = AvroProducerStrKey(self.producerConf, default_value_schema=schema)
@@ -39,6 +46,8 @@ class KafkaProducer():
 
             self.producerConf = {'bootstrap.servers': broker, 'acks': '1', 'enable.idempotence': 'false',
                                  'linger.ms': '0'}
+            if deliveryTimeout is not None:
+                self.producerConf['message.timeout.ms'] = int(deliveryTimeout * 1000)
             self.producer = Producer(self.producerConf)
 
     getbinary = lambda x, n: format(x, 'b').zfill(n)
@@ -49,6 +58,19 @@ class KafkaProducer():
         headers["sender"] = self.producerID
         headers["time"] = pack('!q', timestamp)
         headers["epoch"] = pack('!i', 0)
+        if self.deliveryTimeout is not None:
+            errors = []
+            delivered_messages = []
+            def delivered(error, message):
+                delivered_messages.append(message)
+                if error is not None:
+                    errors.append(error)
+            self.producer.produce(topic=topic, value=value, key=key, headers=headers,
+                                  on_delivery=delivered)
+            remaining = self.producer.flush(self.deliveryTimeout)
+            if remaining or errors or not delivered_messages:
+                raise RuntimeError("Kafka delivery failed on {}: {}".format(topic, errors or "timeout"))
+            return
         self.producer.produce(topic=topic, value=value, key=key, headers=headers)
         # print("< < < publishing to", topic, flush=True)
         # self.producer.produce(topic=topic, value=value, key=key)
@@ -83,5 +105,3 @@ class KafkaProducer():
                 print("Topic {} deleted".format(topic))
             except Exception as e:
                 print("Failed to delete topic {}: {}".format(topic, e))
-
-

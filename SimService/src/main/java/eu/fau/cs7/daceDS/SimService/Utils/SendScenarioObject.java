@@ -24,6 +24,7 @@ import eu.fau.cs7.daceDS.datamodel.Translator;
 import java.io.File;
 import java.io.IOException;
 import java.io.FileOutputStream;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -56,7 +57,8 @@ public class SendScenarioObject
 	static Path scepath;
 	private static String scenarioID;
 	static final int TIMEOUT = 1000;
-	static boolean running = true;
+	static volatile boolean running = true;
+	static volatile boolean scenarioFailed = false;
 	static boolean avroListener = false;
 	static boolean resultsListener = false;
 	static boolean jsonListener = false;
@@ -109,7 +111,7 @@ public class SendScenarioObject
 
 		logger = Logger.getLogger(SendScenarioObject.class.getName());
 
-		scepath = Paths.get(args[0]);
+		scepath = Paths.get(args[0]).toAbsolutePath().normalize();
 		resourcePath = scepath.getParent();			
 		System.out.println("\n\nresourcepath is "+resourcePath);
 		//scenario = RunSimFromFile.parseFile(scepath);
@@ -220,7 +222,7 @@ public class SendScenarioObject
 					}
 					else if(ID.startsWith("file://")) {
 						String refPath = ID; //ID is already absolute path
-						ID = Paths.get(ID).getFileName().toString(); //strip path
+						ID = Paths.get(URI.create(ID).getPath()).getFileName().toString();
 						resourceFileInput = new ResourceFile(ID, type, null, refPath);
 					}
 					else {
@@ -327,6 +329,11 @@ public class SendScenarioObject
 						catch (InterruptedException e) {
 							e.printStackTrace();
 						}
+		kafkaWriter.close();
+		kafkaResourceFileWriter.close();
+		if (scenarioFailed) {
+			System.exit(1);
+		}
 	}
 
 
@@ -536,6 +543,13 @@ public class SendScenarioObject
 
 					System.out.print(ANSI_BLUE+"["+String.format("%07d" , receiveCounter)+"] "+ANSI_RESET+timestr + " | " + record.topic());
 					System.out.println(" | " + record.value().toString());
+					if (record.topic().equals(Config.getStatusTopic(scenarioID))
+							&& record.value().endsWith(": failed")) {
+						scenarioFailed = true;
+						running = false;
+						logger.error("A scenario instance failed; see the wrapper log.");
+						break;
+					}
 
 					if(record.value().toString().contains("finished")) {
 						sceAboutToBeFinished = true;

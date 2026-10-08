@@ -1,0 +1,15 @@
+avro==1.12.2
+certifi==2026.7.22
+cffi==2.1.1
+charset-normalizer==3.5.2
+confluent-kafka==2.15.1
+dss-python==0.15.7
+dss_python_backend==0.14.5
+fastavro==1.13.0
+idna==3.20
+numpy==2.5.3
+opendssdirect.py==0.9.4
+pycparser==3.0
+requests==2.34.2
+typing_extensions==4.16.0
+urllib3==2.8.0

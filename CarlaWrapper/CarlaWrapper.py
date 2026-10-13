@@ -183,6 +183,7 @@ class CarlaWrapper():
         ###############################
         ####### 2. start timing #######
         self.timeSync = TimeSync(broker, registry, self.timeTopic, self.kid+".time", self.sce['Execution']['SyncedParticipants'], logging=False, timeoutHandler=self.handleTimeout)
+        self.producer.on_sent = self.timeSync.notifiyAboutSentMessage
         
         for p in self.regexTopic:
             self.timeSync.addExpectedPattern(p)

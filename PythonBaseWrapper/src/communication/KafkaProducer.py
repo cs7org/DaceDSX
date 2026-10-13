@@ -24,6 +24,7 @@ class KafkaProducer():
         self.producerID = producerID
         self.broker = broker
         self.registry = registry
+        self.on_sent = None
 
         self.producerConf = {'bootstrap.servers': broker, 'schema.registry.url': registry, 'acks': '1',
                              'enable.idempotence': 'false',
@@ -53,6 +54,8 @@ class KafkaProducer():
         # print("< < < publishing to", topic, flush=True)
         # self.producer.produce(topic=topic, value=value, key=key)
         self.producer.flush()
+        if self.on_sent:
+            self.on_sent(topic)
 
     # return True if topic exists and False if not
     def topic_exists(self, topic):

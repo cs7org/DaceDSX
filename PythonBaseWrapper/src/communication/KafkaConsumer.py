@@ -125,6 +125,7 @@ class KafkaConsumer():
 
     def subscribe(self, topics):
         if topics:
+            self.topics = topics
             self.consumer.subscribe(topics)
             print("subscribed to:")
             for t in topics:

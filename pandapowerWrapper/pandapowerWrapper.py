@@ -146,6 +146,7 @@ class pandapowerWrapper():
         self.timeSync = TimeSync(broker, registry, self.timeTopic, self.kid + ".time",
                                  self.sce['execution']['syncedParticipants'], logging=False,
                                  timeoutHandler=self.handleTimeout)
+        self.producer.on_sent = self.timeSync.notifiyAboutSentMessage
 
         for p in self.regexTopic:
             self.timeSync.addExpectedPattern(p)

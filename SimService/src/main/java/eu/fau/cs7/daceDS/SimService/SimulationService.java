@@ -173,9 +173,8 @@ public class SimulationService
 										publishStatus("Requested scenario id "+scenario.getScenarioID()+" is already known, ignoring!");										
 									}
 									
-									if(exitOnFailure && errorAdding > 0) {
+									if(isAddRejected(errorAdding)) {
 										publishStatus("Failed to add "+scenario.getScenarioID()+" to pool!");
-										MAINLOOP_STOPPED.set(true);
 									}
 								}
 							}
@@ -231,6 +230,11 @@ public class SimulationService
 		Thread thread = new Thread(r);
 		thread.start();  
 		return thread;
+	}
+
+	// ScenarioManager.addScenarioRun: 1 (too old) and 2 (id known) are informational, only 3 (instantiation failed) is a rejection
+	static boolean isAddRejected(int errorAdding) {
+		return errorAdding == 3;
 	}
 
 	public static void monitorChanges() {

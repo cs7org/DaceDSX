@@ -13,13 +13,16 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.regex.Pattern;
 
 import org.apache.log4j.Logger;
 
 import eu.fau.cs7.daceDS.Component.Config;
 import eu.fau.cs7.daceDS.datamodel.BB;
 import eu.fau.cs7.daceDS.datamodel.Observer;
+import eu.fau.cs7.daceDS.datamodel.Projector;
 import eu.fau.cs7.daceDS.datamodel.Scenario;
+import eu.fau.cs7.daceDS.datamodel.Translator;
 
 
 
@@ -37,6 +40,8 @@ public class ScenarioManager {
 	static Logger logger  = Logger.getLogger(ScenarioManager.class.getName());
 	private static final long MAX_AGE = 60*60000;
 	private static ArrayList<String> knownSCEIDs = new ArrayList<String>();
+	//ids and types end up as process arguments and path segments
+	private static final Pattern SAFE_ID = Pattern.compile("[A-Za-z0-9._-]+");
 	
 	public ScenarioManager() {
 	}
@@ -130,7 +135,36 @@ public class ScenarioManager {
 	}
 
 
+	/** Returns the first id or type that does not match SAFE_ID, or null if all are safe. */
+	static String findInvalidID(Scenario scenario) {
+		ArrayList<CharSequence> ids = new ArrayList<CharSequence>();
+		ids.add(scenario.getScenarioID());
+		for(BB bb : scenario.getBuildingBlocks()) {
+			ids.add(bb.getInstanceID());
+			ids.add(bb.getType());
+		}
+		for(Projector proj : scenario.getProjectors()) {
+			ids.add(proj.getProjectorID());
+			ids.add(proj.getType());
+		}
+		for(Translator trans : scenario.getTranslators()) {
+			ids.add(trans.getTranslatorID());
+			ids.add(trans.getType());
+		}
+		for(CharSequence id : ids) {
+			if(id == null || !SAFE_ID.matcher(id).matches()) return String.valueOf(id);
+		}
+		return null;
+	}
+
 	public static int addScenarioRun(Scenario scenario, long timestamp) {
+
+		//check if ids and types are safe to be used in a command line
+		String invalidID = findInvalidID(scenario);
+		if(invalidID != null) {
+			logger.info("RunSimFromKafka: Rejecting Scenario " + scenario.getScenarioID()+" request. Id or type '"+invalidID+"' does not match "+SAFE_ID.pattern());
+			return 4;
+		}
 
 		//check if request contains old sce id
 		if(knownSCEIDs.contains(scenario.getScenarioID().toString()))  {

@@ -9,6 +9,8 @@ In 2025, it has been relicensed under the MIT License (https://choosealicense.co
 package eu.fau.cs7.daceDS.SimService;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import org.apache.log4j.Logger;
 
 import eu.fau.cs7.daceDS.Component.Config;
@@ -24,8 +26,8 @@ public class ExecutorThread extends Thread{
 
 	Scenario scenario;
 	String basePath;
-	String callString;
-	String killString;
+	List<String> callCmd;
+	List<String> killCmd;
 	String type;
 	String id;
 	Process proc = null;
@@ -41,21 +43,16 @@ public class ExecutorThread extends Thread{
 		this.type = type;
 		this.id = id;
 		logger  = Logger.getLogger(ExecutorThread.class.getName()+"."+type+"."+id);		
-		callString = basePath+"/"+type+"/"+Config.EXECUTABLE;
-		callString += " " + scenario.getScenarioID() + " " + id;
-		
-		killString = basePath+"/"+type+"/"+Config.EXECUTABLE_KILL;
-		killString += " " + scenario.getScenarioID() + " " + id;
+		callCmd = Arrays.asList(basePath+"/"+type+"/"+Config.EXECUTABLE, scenario.getScenarioID().toString(), id);
+		killCmd = Arrays.asList(basePath+"/"+type+"/"+Config.EXECUTABLE_KILL, scenario.getScenarioID().toString(), id);
 	}
 	
 	
 	public void runKillScript() {
-		logger.info("Killstring is: " + killString);
-		Runtime rt = null;
+		logger.info("Killstring is: " + killCmd);
 		Process proc = null;
 		try {
-			rt = Runtime.getRuntime();
-			proc = rt.exec(killString);
+			proc = new ProcessBuilder(killCmd).start();
 			long exitVal = proc.waitFor();
 			logger.info(id + ": Exit value: " + exitVal);
 		} catch (IOException | InterruptedException e) {
@@ -65,12 +62,10 @@ public class ExecutorThread extends Thread{
 	
 	//todo: very prototypical
 	public void run() {
-		logger.info("Callstring is: " + callString);
-		Runtime rt = null;
+		logger.info("Callstring is: " + callCmd);
 		try {
 			running = true;
-			rt = Runtime.getRuntime();
-			proc = rt.exec(callString);
+			proc = new ProcessBuilder(callCmd).start();
 			pid = proc.pid();
 			
 			exitVal = proc.waitFor();
@@ -79,7 +74,7 @@ public class ExecutorThread extends Thread{
 			logger.info(id + ": Exit value: " + exitVal);
 		} catch (IOException | InterruptedException e) {
 			if(proc != null) proc.destroyForcibly();
-			logger.error(callString + " --> Process exception: " + e.getLocalizedMessage());
+			logger.error(callCmd + " --> Process exception: " + e.getLocalizedMessage());
 			running = false;
 		}
 		runKillScript();

@@ -262,6 +262,10 @@ public class SimulationService
 		String ddir = Config.get(Config.DIR_DEFINITION);
 		File dir = new File(ddir+dirs);
 		System.out.println("definitionDirectory: "+dir);
+		if(!dir.isDirectory()) {
+			logger.error("Definition directory "+dir+" does not exist, exiting...");
+			System.exit(1);
+		}
 
 		String config = "";
 		try {
@@ -299,6 +303,10 @@ public class SimulationService
 		//single msg for  each resource
 		String ddir = Config.get(Config.DIR_DEFINITION);
 		File dir = new File(ddir+"/resources");
+		if(!dir.isDirectory()) {
+			logger.error("Resource directory "+dir+" does not exist, exiting...");
+			System.exit(1);
+		}
 		
 		String config = "";
 		try {

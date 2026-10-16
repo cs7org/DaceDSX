@@ -64,4 +64,19 @@ public class ExecutorThreadTest {
 		assertTrue(log.length() >= 200000);
 		assertTrue(Files.readString(log.toPath()).endsWith("oops\n"));
 	}
+
+	@Test
+	public void terminateKillsProcessThatIgnoresSigterm() throws Exception {
+		File root = tmp.newFolder("root");
+		fakeLauncher(root, "sim", "trap '' TERM; sleep 20\n");
+		ExecutorThread t = new ExecutorThread(root.getPath(), tmp.newFolder("logs").getPath(), "sim", "sim0", scenario("sce"));
+		t.start();
+		for (int i = 0; i < 500 && t.getPID() < 0; i++) Thread.sleep(10);
+		Thread.sleep(300); // let bash install the trap
+
+		t.terminate();
+		t.join(8000);
+
+		assertFalse("process survived terminate()", t.isAlive());
+	}
 }

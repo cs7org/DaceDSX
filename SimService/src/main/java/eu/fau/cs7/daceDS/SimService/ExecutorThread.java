@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.apache.log4j.Logger;
 
 import eu.fau.cs7.daceDS.Component.Config;
@@ -89,9 +90,15 @@ public class ExecutorThread extends Thread{
 	}
 
 	public void terminate() {
-		if(proc != null && running) {
-			proc.destroy();
+		if(proc == null || !running) return;
+		proc.destroy();
+		try {
+			if(proc.waitFor(5, TimeUnit.SECONDS)) return;
+		} catch (InterruptedException e) {
+			logger.error(e.getLocalizedMessage());
 		}
+		logger.warn(id + ": did not exit after SIGTERM, killing");
+		proc.destroyForcibly();
 	}
 	
 	public long getPID(){

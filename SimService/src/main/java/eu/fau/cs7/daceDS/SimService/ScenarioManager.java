@@ -40,6 +40,7 @@ public class ScenarioManager {
 	private static HashMap<String, String> terminationStatus = new HashMap<String,String>();
 	static Logger logger  = Logger.getLogger(ScenarioManager.class.getName());
 	private static final long MAX_AGE = 60*60000;
+	private static final long KILL_JOIN_MS = 10000;
 	private static ArrayList<String> knownSCEIDs = new ArrayList<String>();
 	//ids and types end up as process arguments and path segments
 	private static final Pattern SAFE_ID = Pattern.compile("[A-Za-z0-9._-]+");
@@ -83,10 +84,11 @@ public class ScenarioManager {
 			t.kill();
 			t.interrupt();
 			try {
-				t.join();
+				t.join(KILL_JOIN_MS);
 			} catch (InterruptedException e) {
 				logger.error(e.getLocalizedMessage());
 			}
+			if(t.isAlive()) logger.warn("ScenarioRunner: "+scenario+" still alive "+KILL_JOIN_MS+" ms after kill");
 			logger.info("ScenarioRunner:killed thread for "+scenario);
 		//terminatedScenarioThreads.add(scenario);
 		//runningScenarioThreads.remove(scenario);

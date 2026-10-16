@@ -37,6 +37,7 @@ public class ScenarioManager {
 
 	private static HashMap<String, ScenarioInstanceExecutor> runningScenarioThreads= new HashMap<String,ScenarioInstanceExecutor>();
 	private static ArrayList<String> terminatedScenarioThreads= new ArrayList<String>();
+	private static HashMap<String, String> terminationStatus = new HashMap<String,String>();
 	static Logger logger  = Logger.getLogger(ScenarioManager.class.getName());
 	private static final long MAX_AGE = 60*60000;
 	private static ArrayList<String> knownSCEIDs = new ArrayList<String>();
@@ -51,6 +52,9 @@ public class ScenarioManager {
 	}
 	public static int getNoTerminatedScenarios(){
 		return terminatedScenarioThreads.size();
+	}
+	public static String getTerminationStatus(String scenario){
+		return terminationStatus.get(scenario);
 	}
 	
 	public static int monitorRunningScenarios() {
@@ -124,6 +128,7 @@ public class ScenarioManager {
 		
 		for(String scenario : newlyTerminated) {
 			ScenarioInstanceExecutor r = runningScenarioThreads.get(scenario);
+			terminationStatus.put(scenario, r.getTerminationStatus());
 			runningScenarioThreads.remove(scenario);
 			//todo: cleanup, delete files, topics
 			//Orphaned sim instances need to get informed, so they can stop waiting. they could also use the timeoutLimit to die

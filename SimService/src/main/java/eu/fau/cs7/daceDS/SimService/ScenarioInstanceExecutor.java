@@ -9,6 +9,7 @@ In 2025, it has been relicensed under the MIT License (https://choosealicense.co
 package eu.fau.cs7.daceDS.SimService;
 import java.util.HashMap;
 import java.util.Map.Entry;
+import java.util.StringJoiner;
 
 import org.apache.kafka.common.errors.TimeoutException;
 import org.apache.log4j.Logger;
@@ -38,6 +39,7 @@ public class ScenarioInstanceExecutor extends Thread{
 	private String kafkaID;
 	private boolean done = false;
 	private long startTime = -1;
+	private String terminationStatus;
 	
 	//Each thread executes one instance and hold its status
 	HashMap<String, ExecutorThread> threads;
@@ -66,16 +68,26 @@ public class ScenarioInstanceExecutor extends Thread{
 				logger.error(e.getLocalizedMessage());
 			}
 		}
+		terminationStatus = describeTermination();
 		threads.clear();
 
 		logger.info("ScenarioRunnerThread is exiting for " + scenarioID);
 	}
-	
-	public boolean hasCorruptedParts() {
-		for(Thread t : threads.values()) {
-			if (!t.isAlive()) return false;
+
+	/** Status line for the end of the scenario, naming instances that failed to start or exited non-zero. */
+	private String describeTermination() {
+		StringJoiner failed = new StringJoiner(", ");
+		for(Entry<String, ExecutorThread> entry : threads.entrySet()) {
+			ExecutorThread t = entry.getValue();
+			if(t.hasStartFailed()) failed.add(entry.getKey() + " (start failed)");
+			else if(t.getExitVal() != 0) failed.add(entry.getKey() + " (exit " + t.getExitVal() + ")");
 		}
-		return true;
+		if(failed.length() == 0) return scenarioID + " was terminated.";
+		return scenarioID + " was terminated. Failed instances: " + failed;
+	}
+
+	public String getTerminationStatus() {
+		return terminationStatus;
 	}
 	
 	//run tools, provide resources and so on
@@ -90,7 +102,15 @@ public class ScenarioInstanceExecutor extends Thread{
 		} catch (InterruptedException e) {
 			logger.info(e.getLocalizedMessage());
 		}
-		
+
+		/* An instance that could not be started or already died is fatal for the whole scenario */
+		for(Entry<String, ExecutorThread> entry : threads.entrySet()) {
+			ExecutorThread t = entry.getValue();
+			if(!t.hasStartFailed() && (t.isRunning() || t.getExitVal() == 0)) continue;
+			logger.error(entry.getKey() + " failed to start (exit " + t.getExitVal() + ") --> terminating all instances of " + scenarioID);
+			kill();
+			return false;
+		}
 
 		/* Repost ScenarioFile --> acts as ACK and can be used by the tools to read parameters */
 		logger.info("Acking SCE to "+Config.getProvisionTopic(scenarioID, Config.get(Config.TOPIC_SCENARIO)));

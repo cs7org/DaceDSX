@@ -238,7 +238,7 @@ public class SimulationService
 		ArrayList<String> ended = ScenarioManager.cleanTerminatedScenarios();
 		for(String scen : ended) {
 			logger.info(scen + " was ended ");
-			publishStatus(scen + " was terminated.");
+			publishStatus(ScenarioManager.getTerminationStatus(scen));
 			//getResults(scen);
 		}
 

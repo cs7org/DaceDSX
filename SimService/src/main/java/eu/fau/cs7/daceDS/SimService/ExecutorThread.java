@@ -36,6 +36,7 @@ public class ExecutorThread extends Thread{
 	Process proc = null;
 	long pid = -1;
 	boolean running = false;
+	boolean startFailed = false;
 	int exitVal = -1;
 
 	Logger logger = Logger.getLogger(ExecutorThread.class.getName());
@@ -79,7 +80,8 @@ public class ExecutorThread extends Thread{
 			running = false;
 			logger.info(id + ": Exit value: " + exitVal);
 		} catch (IOException | InterruptedException e) {
-			if(proc != null) proc.destroyForcibly();
+			if(proc == null) startFailed = true;
+			else proc.destroyForcibly();
 			logger.error(callCmd + " --> Process exception: " + e.getLocalizedMessage());
 			running = false;
 		}
@@ -97,6 +99,9 @@ public class ExecutorThread extends Thread{
 	}
 	public long getExitVal(){
 		return exitVal;
+	}
+	public boolean hasStartFailed(){
+		return startFailed;
 	}
 	public boolean isRunning(){
 		return running;

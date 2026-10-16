@@ -31,6 +31,7 @@ public class ScenarioInstanceExecutor extends Thread{
 
 
 	private String basePath;
+	private String logDir;
 	private Scenario scenario;
 	private boolean debug;
 	private String scenarioID;
@@ -49,6 +50,7 @@ public class ScenarioInstanceExecutor extends Thread{
 		this.debug = debug;
 		this.kafkaID = scenario.getScenarioID()+ScenarioInstanceExecutor.class.getName();
 		this.basePath = Config.get(Config.EXECUTABLES_ROOT);
+		this.logDir = Config.get(Config.LOG_DIR);
 	}
 
 	public void run() {
@@ -114,21 +116,21 @@ public class ScenarioInstanceExecutor extends Thread{
 		HashMap<String, ExecutorThread> threads= new HashMap<String,ExecutorThread>();
 
 		for(BB sim : scenario.getBuildingBlocks()) {
-			ExecutorThread t = new ExecutorThread(basePath,sim.getType().toString(), sim.getInstanceID().toString(), scenario);
+			ExecutorThread t = new ExecutorThread(basePath, logDir, sim.getType().toString(), sim.getInstanceID().toString(), scenario);
 			threads.put(sim.getInstanceID().toString(), t);
 			logger.info("Added thread for "+sim.getInstanceID().toString());
 			t.start();
 		}
 		
 		for(Projector proj : scenario.getProjectors()) {
-			ExecutorThread t = new ExecutorThread(basePath, "Projectors/"+proj.getType().toString(), proj.getProjectorID().toString(), scenario);
+			ExecutorThread t = new ExecutorThread(basePath, logDir, "Projectors/"+proj.getType().toString(), proj.getProjectorID().toString(), scenario);
 			threads.put(proj.getProjectorID().toString(), t);
 			logger.info("Added thread for "+proj.getProjectorID().toString());
 			t.start();
 		}		
 
 		for(Translator trans : scenario.getTranslators()) {
-			ExecutorThread t = new ExecutorThread(basePath, "Translators/"+trans.getType().toString(), trans.getTranslatorID().toString(), scenario); //todo: take from SCE
+			ExecutorThread t = new ExecutorThread(basePath, logDir, "Translators/"+trans.getType().toString(), trans.getTranslatorID().toString(), scenario); //todo: take from SCE
 			threads.put(trans.getTranslatorID().toString(), t);
 			logger.info("Added thread for "+trans.getTranslatorID().toString());
 			t.start();

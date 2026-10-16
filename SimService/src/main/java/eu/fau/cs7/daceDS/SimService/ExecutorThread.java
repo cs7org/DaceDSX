@@ -8,7 +8,9 @@ In 2025, it has been relicensed under the MIT License (https://choosealicense.co
 */
 package eu.fau.cs7.daceDS.SimService;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.log4j.Logger;
@@ -26,6 +28,7 @@ public class ExecutorThread extends Thread{
 
 	Scenario scenario;
 	String basePath;
+	File logFile;
 	List<String> callCmd;
 	List<String> killCmd;
 	String type;
@@ -37,8 +40,9 @@ public class ExecutorThread extends Thread{
 
 	Logger logger = Logger.getLogger(ExecutorThread.class.getName());
 	
-	ExecutorThread(String basePath, String type, String id, Scenario scenario){
+	ExecutorThread(String basePath, String logDir, String type, String id, Scenario scenario){
 		this.basePath  = basePath;
+		this.logFile  = new File(logDir, scenario.getScenarioID() + "_" + id + ".run.log");
 		this.scenario  = scenario;
 		this.type = type;
 		this.id = id;
@@ -52,7 +56,7 @@ public class ExecutorThread extends Thread{
 		logger.info("Killstring is: " + killCmd);
 		Process proc = null;
 		try {
-			proc = new ProcessBuilder(killCmd).start();
+			proc = new ProcessBuilder(killCmd).redirectErrorStream(true).redirectOutput(ProcessBuilder.Redirect.appendTo(logFile)).start();
 			long exitVal = proc.waitFor();
 			logger.info(id + ": Exit value: " + exitVal);
 		} catch (IOException | InterruptedException e) {
@@ -65,7 +69,9 @@ public class ExecutorThread extends Thread{
 		logger.info("Callstring is: " + callCmd);
 		try {
 			running = true;
-			proc = new ProcessBuilder(callCmd).start();
+			//child output is never read, so send it to a file instead of a pipe that fills up
+			Files.createDirectories(logFile.getParentFile().toPath());
+			proc = new ProcessBuilder(callCmd).redirectErrorStream(true).redirectOutput(logFile).start();
 			pid = proc.pid();
 			
 			exitVal = proc.waitFor();

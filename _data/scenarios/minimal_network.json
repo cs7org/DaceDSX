@@ -17,13 +17,13 @@
       "layer": "network",
       "domain": "energy",
       "stepLength": 1,
-      "parameters": {},
+      "parameters": {"copy_buses": ""},
       "resources": {"file:///../_data/resources/minimal_network.hdf5": "Network"
       },
       "results": {},
       "synchronized": true,
       "isExternal": false,
-      "responsibilities": [],
+      "responsibilities": ["*"],
       "observers": []
     }
   ],

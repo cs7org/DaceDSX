@@ -1,0 +1,7 @@
+OpenDSSDirect.py==0.9.4
+confluent-kafka==2.15.1
+avro==1.12.2
+# PythonBaseWrapper uses the legacy Confluent Avro serializer.
+requests==2.34.2
+urllib3==2.8.0
+fastavro==1.13.0

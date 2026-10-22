@@ -15,11 +15,15 @@ from confluent_kafka import KafkaError
 from AvroProducerConsumer import AvroConsumerStrKey
 from confluent_kafka import Consumer
 import threading
+import math
 
 
 class KafkaConsumer():
 
-    def __init__(self, broker, registry, topics, consumerID, avro=True, cb=0):
+    def __init__(self, broker, registry, topics, consumerID, avro=True, cb=0, strict=False, requestTimeout=None):
+        if requestTimeout is not None and (not math.isfinite(requestTimeout) or requestTimeout <= 0):
+            raise ValueError("requestTimeout must be finite and positive")
+        self.strict = strict
         self.consumerID = consumerID
         self.broker = broker
         self.registry = registry
@@ -31,6 +35,10 @@ class KafkaConsumer():
             self.consumerConf = {'bootstrap.servers': broker, 'schema.registry.url': registry, 'group.id': consumerID,
                                  'client.id': consumerID, 'auto.offset.reset': "earliest",
                                  'max.poll.interval.ms': 3000000}
+            if requestTimeout is not None:
+                self.consumerConf['schema.registry.request.timeout'] = requestTimeout
+            if strict:
+                self.consumerConf['topic.metadata.refresh.interval.ms'] = 1000
             self.consumer = AvroConsumerStrKey(self.consumerConf)
         else:
             self.consumerConf = {'bootstrap.servers': broker, 'group.id': consumerID, 'client.id': consumerID,
@@ -89,6 +97,16 @@ class KafkaConsumer():
     #             print("Message deserialization failed for {}: {}".format(inMsg, e), flush=True)
 
     def poll(self, timeout):
+        if self.strict:
+            msg = self.consumer.poll(timeout)
+            if msg is not None and msg.error():
+                # SimService starts the wrapper before the sender creates its
+                # resource topic. Kafka retries metadata; the caller's deadline
+                # still bounds the wait if the topic is never created.
+                if msg.error().code() in (KafkaError.UNKNOWN_TOPIC_OR_PART, KafkaError._PARTITION_EOF):
+                    return None
+                raise RuntimeError(str(msg.error()))
+            return msg
         try:
             msg = self.consumer.poll(timeout)
             if msg is None:
@@ -137,8 +155,4 @@ class KafkaConsumer():
 
     def list_topics(self):
         return self.consumer.list_topics().topics
-
-
-
-
 

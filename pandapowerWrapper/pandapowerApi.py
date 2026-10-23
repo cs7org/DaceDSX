@@ -29,6 +29,7 @@ import pandas as pd
 import pandapower as pp
 import json
 import time
+from MessageBuffer import MessageBuffer
 
 pd.options.mode.chained_assignment = None
 
@@ -37,7 +38,7 @@ class pandapowerAPI(object):
     """ Class representing the surrounding environment """
 
     def __init__(self, network_path, timesync, consumer, producer, scenarioID, other_instance_topics, instanceID,
-                 step_length=3600, simulationEnd=24, w="", wcb=None, to_observe=None, parameters=[], translator_consumer=None):
+                 step_length=3600, simulationEnd=24, w="", wcb=None, to_observe=None, parameters=[]):
         # print("\n\n_____init_____\n\n", flush=True)
         if to_observe is None:
             to_observe = []
@@ -67,8 +68,8 @@ class pandapowerAPI(object):
         self.to_observe = to_observe
         self.buses_at_cut = []
 
-        self.translator_consumer = translator_consumer
-        self.translator_msg_queue = []
+        # filled by the wrapper's main consumer thread, read in prepareStep
+        self.translator_inbox = MessageBuffer()
 
     def build_network(self, data):
         net = pp.create_empty_network(
@@ -225,9 +226,6 @@ class pandapowerAPI(object):
         if topics:
             self.wait_for_topic(self.consumer, topics[0])
             self.consumer.subscribe(topics)
-        if translator_topics:
-            self.wait_for_topic(self.translator_consumer,translator_topics[0])
-            self.translator_consumer.subscribe(translator_topics)
         self.buses = {}
         for bus in self.network.bus.iterrows():
             self.buses[self.network.bus.name[bus[0]]] = bus[0]
@@ -244,7 +242,7 @@ class pandapowerAPI(object):
 
     def on_translator_msg(self, inMsg):
         """Wird von processMsg im Wrapper aufgerufen"""
-        self.translator_msg_queue.append(inMsg)
+        self.translator_inbox.add(inMsg)
 
     def prepareStep(self, step):
         print("____prepareStep____", flush=True)
@@ -267,18 +265,10 @@ class pandapowerAPI(object):
                             self.network.sgen.at[idx, 'p_mw'] = float(val)
                     except:
                         pass
-        translator_msgs= []
-        # while len(self.translator_msg_queue) < 4:
-        #     time.sleep(1)
-        #     print("current msg count:", len(self.translator_msg_queue), flush=True)
-        translator_msgs = self.translator_msg_queue.copy()
-        self.translator_msg_queue.clear()
-        msg = self.translator_consumer.poll(10)
-        while msg:
-            translator_msgs.append(msg)
-            self.timeSync.notifiyAboutReceivedMessage(msg.topic())
-            msg = self.translator_consumer.poll(3)
-        print("translator_msgs", translator_msgs, flush=True)
+        # TimeSync guarantees that all messages sent before the current time have arrived,
+        # messages of the current step stay buffered for the next one
+        translator_msgs = self.translator_inbox.take(self.timeSync.currentLocalTime)
+        print("translator_msgs", len(translator_msgs), flush=True)
         for msg in translator_msgs:
             content = msg.value()
             self.set_values_pp(False, self.buses[content["name"]], float(content["v_mag_pu"]), float(content['v_ang']),
@@ -306,22 +296,32 @@ class pandapowerAPI(object):
             topics.append((topic + "." + ghost).replace(' ', '_'))
         return topics
 
+    def interface_sgen_name(self, bus):
+        """Name of the sgen create_interface puts at a copy bus (bus = bus index)"""
+        return str(bus) + "_gen"
+
     def set_values_pp(self, ex, bus, v_mag, v_ang, p, q):
+        # write via .at: chained assignment (net.sgen.p_mw[i] = x) silently writes to a copy
+        # with pandas Copy-on-Write (default from pandas 3.0)
         print("____set_values_pp____", flush=True)
         if ex:
             print("------if EX -----------")
-            self.network.ext_grid.vm_pu[0] = v_mag
-            self.network.ext_grid.va_degree[0] = v_ang
+            for elem in pp.toolbox.get_connected_elements(self.network, "ext_grid", bus):
+                self.network.ext_grid.at[elem, "vm_pu"] = v_mag
+                self.network.ext_grid.at[elem, "va_degree"] = v_ang
         else:
             print("---------SGEN----------", self.buses, bus)
+            name = self.interface_sgen_name(bus)
             for elem in pp.toolbox.get_connected_elements(self.network, "sgen", bus):
-                if self.network.sgen.name[elem] == str(bus) + "_gen":
-                    try:
-                        self.network.asymmetric_sgen.p_mw[elem] = p
-                        self.network.asymmetric_sgen.q_mvar[elem] = q
-                    except:
-                        self.network.sgen.p_mw[elem] = p
-                        self.network.sgen.q_mvar[elem] = q
+                if self.network.sgen.at[elem, "name"] == name:
+                    self.network.sgen.at[elem, "p_mw"] = p
+                    self.network.sgen.at[elem, "q_mvar"] = q
+            # asymmetric_sgen has per-phase columns, split the power evenly
+            for elem in pp.toolbox.get_connected_elements(self.network, "asymmetric_sgen", bus):
+                if self.network.asymmetric_sgen.at[elem, "name"] == name:
+                    for ph in ("a", "b", "c"):
+                        self.network.asymmetric_sgen.at[elem, f"p_{ph}_mw"] = p / 3
+                        self.network.asymmetric_sgen.at[elem, f"q_{ph}_mvar"] = q / 3
 
     def processStep(self, step):
         print("____processStep____", flush=True)
@@ -329,7 +329,7 @@ class pandapowerAPI(object):
         for bus in self.buses_at_cut:
             topic = self.get_topic(bus)
             value = self.get_bus(bus, step)
-            msg = self.producer.produce(topic, value)
+            msg = self.producer.produce(topic, value, timestamp=self.timeSync.currentLocalTime)
             self.timeSync.notifiyAboutSentMessage(topic)
         for i, idx in enumerate(self.network.bus.index):
             if self.bus_vm is not None:
@@ -407,30 +407,7 @@ class pandapowerAPI(object):
                         if overlap_v_mag_pu == 0:
                             overlap_v_mag_pu = float(msg_overlap.value()['v_mag_pu'])
                         v_diff = voltage_ist_ghost - overlap_v_mag_pu
-                        p = 0
-                        q = 0
-                        ex = False
-                        for elem in pp.toolbox.get_connected_elements(self.network, "ext_grid", self.buses[copy_bus]):
-                            if self.three_phase:
-                                p = self.network.res_ext_grid_3ph.p_a_mw[0] + self.network.res_ext_grid_3ph.p_b_mw[0] + self.network.res_ext_grid_3ph.p_c_mw[0]
-                                q = self.network.res_ext_grid_3ph.q_a_mvar[0] + self.network.res_ext_grid_3ph.q_b_mvar[0] + self.network.res_ext_grid_3ph.q_c_mvar[0]
-                            else:
-                                p = self.network.res_ext_grid.p_mw[0]
-                                q = self.network.res_ext_grid.q_mvar[0]
-                            ex = True
-
-                        for elem in pp.toolbox.get_connected_elements(self.network, "sgen", self.buses[copy_bus]):
-                            if self.network.sgen.name[elem] == copy_bus + "_gen":
-                                p = self.network.res_sgen.p_mw[elem]
-                                q = self.network.res_sgen.q_mvar[elem]
-                        for elem in pp.toolbox.get_connected_elements(self.network, "asymmetric_sgen",
-                                                                              self.buses[copy_bus]):
-                            if self.network.asymmetric_sgen.name[elem] == self.buses[copy_bus] + "_gen":
-                                p = self.network.res_asymmetric_sgen.p_a_mw[elem] + self.network.res_asymmetric_sgen.p_b_mw[
-                                    elem] + self.network.res_asymmetric_sgen.p_c_mw[elem]
-                                q = self.network.res_asymmetric_sgen.q_a_mvar[elem] + \
-                                    self.network.res_asymmetric_sgen.q_b_mvar[elem] + \
-                                    self.network.res_asymmetric_sgen.q_c_mvar[elem]
+                        p, q, ex = self.get_interface_pq(self.buses[copy_bus])
                         print("p", p, "q", q, "voltage_ist_ghost", voltage_ist_ghost, flush=True)
                         p_diff = abs(float(p)) - abs(overlap_p)
                         q_diff = abs(float(q) - abs(overlap_q))
@@ -476,42 +453,43 @@ class pandapowerAPI(object):
 
         return
 
+    def get_interface_pq(self, bus):
+        """
+        Result p [MW] / q [MVAr] of the interface element at a bus (bus = bus index):
+        the ext_grid (slack) or the sgen created by create_interface.
+        Returns (p, q, is_slack). Uses the element index, not row 0 of the result tables.
+        """
+        p, q, is_slack = 0.0, 0.0, False
+        for elem in pp.toolbox.get_connected_elements(self.network, "ext_grid", bus):
+            is_slack = True
+            if self.three_phase:
+                res = self.network.res_ext_grid_3ph
+                p = float(res.at[elem, "p_a_mw"] + res.at[elem, "p_b_mw"] + res.at[elem, "p_c_mw"])
+                q = float(res.at[elem, "q_a_mvar"] + res.at[elem, "q_b_mvar"] + res.at[elem, "q_c_mvar"])
+            else:
+                p = float(self.network.res_ext_grid.at[elem, "p_mw"])
+                q = float(self.network.res_ext_grid.at[elem, "q_mvar"])
+
+        name = self.interface_sgen_name(bus)
+        for elem in pp.toolbox.get_connected_elements(self.network, "sgen", bus):
+            if self.network.sgen.at[elem, "name"] == name:
+                p = float(self.network.res_sgen.at[elem, "p_mw"])
+                q = float(self.network.res_sgen.at[elem, "q_mvar"])
+        for elem in pp.toolbox.get_connected_elements(self.network, "asymmetric_sgen", bus):
+            if self.network.asymmetric_sgen.at[elem, "name"] == name:
+                res = self.network.res_asymmetric_sgen
+                p = float(res.at[elem, "p_a_mw"] + res.at[elem, "p_b_mw"] + res.at[elem, "p_c_mw"])
+                q = float(res.at[elem, "q_a_mvar"] + res.at[elem, "q_b_mvar"] + res.at[elem, "q_c_mvar"])
+        return p, q, is_slack
+
     def get_bus(self, bus_name, snapshot):
         print("____get_bus____", flush=True)
         # print(self.buses)
         power_system = {}
         try:
             power_system["name"] = str(bus_name)
-            p = 0
-            q = 0
-            power_system["control"] = "PQ"
-
-            for elem in pp.toolbox.get_connected_elements(self.network, "ext_grid", self.buses[bus_name]):
-                power_system["control"] = str("Slack")
-                print("__getting p and q for slack three phase:", self.three_phase)
-                if self.three_phase:
-                    p = float(self.network.res_ext_grid_3ph.p_a_mw[0] + self.network.res_ext_grid_3ph.p_b_mw[0] +
-                              self.network.res_ext_grid_3ph.p_c_mw[0])
-                    q = float(self.network.res_ext_grid_3ph.q_a_mvar[0] + self.network.res_ext_grid_3ph.q_b_mvar[0] +
-                              self.network.res_ext_grid_3ph.q_c_mvar[0])
-                else:
-                    p = float(self.network.res_ext_grid.p_mw[0])
-                    q = float(self.network.res_ext_grid.q_mvar[0])
-            for elem in pp.toolbox.get_connected_elements(self.network, "sgen", self.buses[bus_name]):
-                print("__getting p and q for sgen three phase:", self.three_phase)
-                if self.network.sgen.name[elem] == str(self.buses[bus_name]) + "_gen":
-                    power_system["control"] = str("PQ")
-                    p = float(self.network.res_sgen.p_mw[0])
-                    q = float(self.network.res_sgen.q_mvar[0])
-
-            for elem in pp.toolbox.get_connected_elements(self.network, "asymmetric_sgen", self.buses[bus_name]):
-                print("__getting p and q for asymmetric_sgen three phase:", self.three_phase)
-                if self.network.asymmetric_sgen.name[elem] == self.buses[bus_name] + "_gen":
-                    power_system["control"] = str("PQ")
-                    p = float(self.network.res_asymmetric_sgen.p_a_mw[0] + self.network.res_asymmetric_sgen.p_b_mw[0] +
-                              self.network.res_asymmetric_sgen.p_c_mw[0])
-                    q = float(self.network.res_asymmetric_sgen.q_a_mvar[0] + self.network.res_asymmetric_sgen.q_b_mvar[0] +
-                              self.network.res_asymmetric_sgen.q_c_mvar[0])
+            p, q, is_slack = self.get_interface_pq(self.buses[bus_name])
+            power_system["control"] = "Slack" if is_slack else "PQ"
             power_system["p"] = str(p)
             power_system["q"] = str(q)
             print("__getting vs __")
@@ -534,7 +512,7 @@ class pandapowerAPI(object):
         for bus in self.to_observe:
             topic = self.get_topic(bus)
             value = self.get_bus(bus, snapshot)
-            msg = self.producer.produce(topic, value)
+            msg = self.producer.produce(topic, value, timestamp=self.timeSync.currentLocalTime)
             self.timeSync.notifiyAboutSentMessage(topic)
 
 
@@ -567,7 +545,7 @@ class pandapowerAPI(object):
         for bus in self.network.bus.iterrows():
             if self.network.bus.name[bus[0]] in self.buses_at_cut:
                 if not pp.toolbox.get_connected_elements(self.network, "ext_grid", bus[0]):
-                    pp.create_sgen(self.network, bus[0], p_mw=0, name=str(bus[0])+"_gen")
+                    pp.create_sgen(self.network, bus[0], p_mw=0, name=self.interface_sgen_name(bus[0]))
 
     def destroy(self):
         """Destroys all actors"""

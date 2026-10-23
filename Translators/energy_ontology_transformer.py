@@ -12,6 +12,8 @@ sys.path.append(this_directory+'/../PythonBaseWrapper/src/communication')
 from TimeSync import TimeSync
 from KafkaConsumer import KafkaConsumer
 from KafkaProducer import KafkaProducer
+from MessageBuffer import MessageBuffer, getMsgSender
+import traceback
 import networkx as nx
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
@@ -71,6 +73,9 @@ class OntologyTransformer():
 
         self.demoMode = False
         self.timestep = 0
+        # filled by the main consumer thread, translated in the simulation loop
+        self.inbox = MessageBuffer()
+        self.publish_topics = None
 
 
 
@@ -146,8 +151,10 @@ class OntologyTransformer():
 
 
     def handleTimeout(self):
-        print("handleTimeout", flush=True)
-        self.startMainConsumer()
+        # restarting the consumer would re-deliver uncommitted messages, the consumer
+        # picks up new topics by itself (metadata refresh), so only report what is missing
+        print("handleTimeout: still waiting for", self.timeSync.expectedReceiveCount,
+              "received", self.timeSync.actualReceivedMsgCount, flush=True)
 
     def startMainConsumer(self):
         if (self.consumer is not None):
@@ -174,7 +181,10 @@ class OntologyTransformer():
             topicBody = inMsg.topic()[len(self.topicPre):]
             subject, tmp = topicBody.split(".", 1)
             # print("Subject: ", subject, flush=True)
-            self.translate_process_msg(inMsg)
+            # translation happens in the simulation loop (run), not in this consumer thread.
+            # our own output is only counted, translating it again could create loops
+            if not getMsgSender(inMsg).startswith(self.kid + "."):
+                self.inbox.add(inMsg)
             if subject == "PV" or subject == "Battery" or subject == "Bus":
                 bus = tmp.split(".", 1)[0]
                 # special chars
@@ -227,54 +237,55 @@ class OntologyTransformer():
         return descendant in reachable
 
     def build_bus_index(self, building_blocks):
-        index = {}
-        for layer in self.layerA:
-            index[layer] = []
-        for layer in self.layerB:
-            index[layer] = []
+        """
+        Per layer, which buses a building block provides data for and which it consumes data for:
+        - provides: its observers, the bus it is connected to ("bus") and its copy buses
+        - consumes: the bus it takes its setpoint from ("slack") and its copy buses
+        e.g. the battery consumes the slack power but only publishes its own state at "bus",
+        so nothing may be translated into its output topic.
+        """
+        provides, consumes = {}, {}
+        for layer in self.layerA + self.layerB:
+            provides[layer] = []
+            consumes[layer] = []
 
+        def split(value):
+            return [b.strip() for b in value.split(",")]
 
         for block in building_blocks:
             layer = block["layer"]
             params = block.get("parameters", {})
-            observer = block["observers"]
-            # print(observer)
-            # resps = []
-            for obs in observer:
-                index[layer].extend([b.strip() for b in obs["filter"].split(",")])
+            for obs in block["observers"]:
+                provides[layer].extend(split(obs["filter"]))
 
             if "bus" in params:
-                index[layer].extend([b.strip() for b in params["bus"].split(",")])
+                provides[layer].extend(split(params["bus"]))
             if "slack" in params:
-                index[layer].extend([b.strip() for b in params["slack"].split(",")])
+                consumes[layer].extend(split(params["slack"]))
 
-            # Spezialfall: Bus-Layer selbst
+            # Spezialfall: Bus-Layer selbst, copy buses are exchanged in both directions
             if "copy_buses" in params:
-                index[layer].extend([b.strip() for b in params["copy_buses"].split(",")])
+                provides[layer].extend(split(params["copy_buses"]))
+                consumes[layer].extend(split(params["copy_buses"]))
 
-            # index[layer].extend(resps)
+        return provides, consumes
 
-        return index
-
-    def build_translator_map(self, translator, bb_index):
-        #todo multiple candidates for the same layerA
-
+    def build_translator_map(self, translator, provides, consumes):
         # layerA = [x.strip() for x in translator["layerA"].split(",")]
         # layerB = [x.strip() for x in translator["layerB"].split(",")]
 
         result = {}
 
         for layer_a in self.layerA:
-            resp_a = bb_index[layer_a]
             for layer_b in self.layerB:
                 if layer_a == layer_b:
                     continue
 
-                intersection = list(set(resp_a) & set(bb_index[layer_b]))
+                # only buses layer_a publishes and layer_b expects as input
+                intersection = list(set(provides[layer_a]) & set(consumes[layer_b]))
                 if intersection:
-                    result[layer_a] = {
-                        layer_b: intersection
-                    }
+                    # setdefault: several target layers for the same source must not overwrite each other
+                    result.setdefault(layer_a, {})[layer_b] = intersection
 
         return result
 
@@ -356,26 +367,58 @@ class OntologyTransformer():
                 self.layer_dict[key] = {"infos": infos,
                                    "message": message_format}
                 print(len(message_format.keys()))
-        bb_index = self.build_bus_index(self.sce["buildingBlocks"])
-        self.mappings = self.build_translator_map(self.sce["translators"], bb_index)
+        provides, consumes = self.build_bus_index(self.sce["buildingBlocks"])
+        self.mappings = self.build_translator_map(self.sce["translators"], provides, consumes)
+        print("translator mappings:", self.mappings, flush=True)
 
 
     def run(self):
         print("\n\n_______________run_______________\n\n")
-        # try:
         self.check_compatibility()
         self.klog("simulating")
-        sleep(5)
 
         print("HERE layerB", self.layerB)
         self.producers={}
-        self.publish_topics = {}
         for layer in self.layerB:
-            translationProducer = KafkaProducer(broker, registry, layer,useAvro=True, schemaPath=f"{schemaPath}{layer}.avsc" )
-            self.producers[layer] = translationProducer
-            all_topics = translationProducer.all_topics()
-            # print("ALL TOPICS: ", all_topics)
+            # own producer ID per layer, processMsg uses the 'sender' header to skip our own output
+            self.producers[layer] = KafkaProducer(broker, registry, self.kid + "." + layer, useAvro=True, schemaPath=f"{schemaPath}{layer}.avsc")
 
+        ### create api bridge and run  ######
+        stepLengthMin = self.timestep
+        end = self.sce['simulationEnd']
+        self.startMainConsumer()
+        try:
+            while self.timeSync.currentLocalTime < end:
+                print("IN LOOP")
+
+                # 1. ask to proceed
+                self.timeSync.timeAdvance(stepLengthMin)
+
+                # every participant creates its topics before its first time request,
+                # so after our first advance all publish topics exist (replaces the old sleep(5))
+                if self.publish_topics is None:
+                    self.publish_topics = self.find_publish_topics()
+
+                # 2. translate everything that was sent before the current time. The results are
+                # announced with our next time request, so receivers process them in their next step
+                for msg in self.inbox.take(self.timeSync.currentLocalTime):
+                    try:
+                        self.translate_process_msg(msg)
+                    except Exception:
+                        print("translation failed for message on", msg.topic(), flush=True)
+                        traceback.print_exc()
+
+            self.klog("finished")
+        finally:
+            if self.consumer is not None:
+                self.consumer.stop()
+            if self.timeSync is not None:
+                self.timeSync.leaveTiming()
+
+    def find_publish_topics(self):
+        publish_topics = {}
+        for layer in self.layerB:
+            all_topics = self.producers[layer].all_topics()
             topics = []
             for val in self.mappings.values():
                 if layer in val.keys():
@@ -383,81 +426,8 @@ class OntologyTransformer():
                         print("layer", layer, "resp", resp)
                         topics.extend(t for t in all_topics if "."+str(layer)+"." in t and str(resp).replace(" ", "_") in t and self.scenarioID in t)
             print("Publish Topics", topics)
-            self.publish_topics[layer] = topics
-        subscribe_topics = []
-        for layer in self.layerA:
-            # print("\n", self.mappings[layer], "\n")
-            print("\n", self.mappings, "\n")
-            for resp in self.mappings[layer]:
-                buses = self.mappings[layer][resp]
-                for bus in buses:
-                    for topic in all_topics:
-                        if "."+str(layer)+"." in topic and str(bus).replace(" ", "_") in topic and self.scenarioID in topic:
-                            subscribe_topics.append(topic)
-                    # print("\n", bus, "\n")
-                    # topic = f"{self.regexTopic[0]}\.{str(layer)}(\..+)*\.{str(bus).replace(' ', '_')}"
-                    # print("TOPIC TO SUBSCRIBE: ", topic)
-                    # subscribe_topics.append(topic)
-        print("SUBSCRIBE TOPICS",subscribe_topics)
-
-        ### create api bridge and run  ######
-        stepLengthMin = self.timestep
-        # stepLengthS = self.sim['stepLength'] * 60
-        end = self.sce['simulationEnd']
-        self.translationConsumer = KafkaConsumer(broker, registry, subscribe_topics, "ontology_translator")
-        self.startMainConsumer()
-        while self.timeSync.currentLocalTime < end:
-            print("IN LOOP")
-
-            # 1. ask to proceed
-            sssl = stepLengthMin
-            self.timeSync.timeAdvance(sssl)
-            # try:
-            #     while True:
-            #         msg = self.translationConsumer.poll(1)
-            #         if msg:
-            #             print("GOT MESSAGE")
-            #             self.timeSync.notifiyAboutReceivedMessage(msg.topic())
-            #             topic = msg.topic()
-            #             value = msg.value()
-            #             topic_parts = topic.split(self.topicPre)[-1].split(".")
-            #             msg_layer = topic_parts[0]
-            #             msg_resp = topic_parts[-1]
-            #             for layer_b in self.mappings[msg_layer]:
-            #                 for resp in self.mappings[msg_layer][layer_b]:
-            #                     print("msg_resp", msg_resp, self.mappings[msg_layer][layer_b], str(self.mappings[msg_layer][layer_b]).replace(" ", "_"))
-            #                     if msg_resp in str(resp).replace(" ", "_"):
-            #                         print("TRANSLATING")
-            #                         trans_msg = self.translate_message(value, msg_layer, layer_b, self.layer_dict, resp)
-            #                         print("finished translating", trans_msg)
-            #                         for tpc in self.publish_topics[layer_b]:
-            #                             if tpc.endswith(msg_resp):
-            #                                 print("publishing msg to topic", tpc, trans_msg)
-            #                                 self.producers[layer_b].produce(tpc, trans_msg)
-            #                                 self.timeSync.notifiyAboutSentMessage(tpc)
-            #         else:
-            #             break
-            #     # self.timeSync.timeAdvance(sssl)
-            # except Exception as e:
-            #     print("prepareStep catched exception ")
-            #     print(e)
-
-                # 3.2. Makefile the sim step simulate
-
-
-        self.klog("finished")
-
-        # except Exception as e:
-        #     print("main loop catched exception - vvvvvvvv")
-        #     print(e)
-        #     print("main loop catched exception - ^^^^^^^")
-        #
-        # finally:
-        if self.consumer is not None:
-            self.consumer.stop()
-        if self.timeSync is not None:
-            self.timeSync.leaveTiming()
-            # saving results
+            publish_topics[layer] = topics
+        return publish_topics
 
     def translate_process_msg(self, msg):
         topic = msg.topic()
@@ -481,7 +451,7 @@ class OntologyTransformer():
                         for tpc in self.publish_topics[layer_b]:
                             if tpc.endswith(msg_resp):
                                 print("publishing msg to topic", tpc, trans_msg)
-                                self.producers[layer_b].produce(tpc, trans_msg)
+                                self.producers[layer_b].produce(tpc, trans_msg, timestamp=self.timeSync.currentLocalTime)
                                 self.timeSync.notifiyAboutSentMessage(tpc)
 
     def translate_unit(self, value, unitA, unitB):
@@ -542,8 +512,8 @@ class OntologyTransformer():
                     print("HERE2")
                     value = self.convert_type(value, info_layerB[msg_field]["type"])
                     print("HERE3")
-                    if layerA == "Bus" and layerB == "Battery" and info_layerA[val]["concept"] == "Power":
-                        value = -value
+                    # no sign flip for Bus -> Battery: a positive slack power (grid import) maps to a
+                    # positive battery power, which the battery treats as discharge (feed-in convention)
                     new_msg[msg_field] = value
                     print("HERE4")
                     filled = True

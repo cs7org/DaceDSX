@@ -27,20 +27,24 @@ from __future__ import print_function
 import liionpack as lp
 import pybamm
 import pandas as pd
+import numpy as np
+import math
 import time
+from MessageBuffer import MessageBuffer
 
 
 
 class liionpackAPI(object):
     """ Class representing the surrounding environment """
 
-    def __init__(self, timesync, consumer, producer, scenarioID, instanceID,
+    def __init__(self, timesync, producer, scenarioID, instanceID,
                  step_length=3600, simulationEnd=24, w="", wcb=None, to_observe=None, parameters=[]):
         # print("\n\n_____init_____\n\n", flush=True)
         if to_observe is None:
             to_observe = []
         self.wrapper_cb = wcb
-        self.consumer = consumer
+        # filled by the wrapper's main consumer thread, read in prepareStep
+        self.inbox = MessageBuffer()
         self.producer = producer
         self.scenarioID = scenarioID
         self.recOn = 0
@@ -60,6 +64,9 @@ class liionpackAPI(object):
         # self.ini_soc = self.parameters["soc"]
         self.curr_soc = float(self.parameters["soc"])
         self.slack = self.parameters["slack"]
+        # maximum charge/discharge power [W]. Requests above are limited to it instead of being ignored.
+        # 255601 W was the old cut-off value, so it stays the default when the scenario sets none
+        self.p_max = float(self.parameters.get("p_max", 255601))
         # self.topic = self.topicPre + "battery." + self.bus
 
         # self.producer.create_topics([self.topic])
@@ -67,11 +74,15 @@ class liionpackAPI(object):
         # -------------------------
         # PACK PARAMETER
         # -------------------------
-        self.Np = 134  # series cells
-        self.Ns = 1  # parallel strings
+        # liionpack convention: Np = cells in parallel, Ns = cells in series
+        self.Np = 134
+        self.Ns = 200
 
         # Zellmodell (DFN = Doyle-Fuller-Newman)
         self.parameter_values = pybamm.ParameterValues("Chen2020")
+        # pack capacity for the SoC bookkeeping (coulomb counting)
+        self.capacity_ah = self.Np * float(self.parameter_values["Nominal cell capacity [A.h]"])
+        self.voltage = 0.0  # last known pack voltage
 
         # -------------------------
         # PACK LAYOUT
@@ -82,63 +93,65 @@ class liionpackAPI(object):
         Ri_init = 5e-2  # used for intial guess
         R_busbar = 1.5e-3
         R_connection = 1e-2
-        Np = 134
-        Ns = 200
-        self.Nbatt = Np * Ns
+        self.Nbatt = self.Np * self.Ns
         self.netlist = lp.setup_circuit(
-            Np=Np, Ns=Ns, Rb=R_busbar, Rc=R_connection, Ri=Ri_init, V=OCV_init, I=I_mag
+            Np=self.Np, Ns=self.Ns, Rb=R_busbar, Rc=R_connection, Ri=Ri_init, V=OCV_init, I=I_mag
         )
 
         # self.bus = self.parameters["bus"]
         # self.slack = self.parameters["slack"]
         self.bus_topic = self.topicPre + "Battery." + self.bus.replace(" ", "_")
-        slack_topic = self.topicPre + "Battery."+ self.slack.replace(" ", "_")
-        self.producer.create_topics([self.bus_topic, slack_topic])
-        print("HERE before subscribing to slack topic")
-        self.consumer.subscribe([slack_topic])
-        print("HERE after subscribing to slack topic")
-        self.wait_for_topic(slack_topic)
+        self.slack_topic = self.topicPre + "Battery."+ self.slack.replace(" ", "_")
+        self.producer.create_topics([self.bus_topic, self.slack_topic])
 
-    def wait_for_topic(self, topic, timeout=10):
-        start = time.time()
-        while time.time() - start < timeout:
-            meta = self.consumer.list_topics()
-            print(meta.keys(), topic, topic in meta.keys(), flush=True)
-            if topic in meta.keys():
-                return True
-            time.sleep(0.5)
-        return False
+    def on_msg(self, inMsg):
+        """Called by processMsg of the wrapper"""
+        self.inbox.add(inMsg)
 
     def prepareStep(self, step):
         # -------------------------
         # EXCITATION PROFILE
         # -------------------------
         print("HERE in prepare step", flush=True)
-        msg = self.consumer.poll(5)
-        if msg:
-            power = msg.value()['power']
-            if abs(power) > 255601:
-                power = 0.000000005
-        else:
-            power = 0.000000005
+        # TimeSync guarantees that all messages sent before the current time have arrived,
+        # messages of the current step stay buffered for the next one
+        msgs = self.inbox.take(self.timeSync.currentLocalTime, topic=self.slack_topic)
+        # drop messages on other Battery.* topics (e.g. our own output), they are only counted
+        self.inbox.take(self.timeSync.currentLocalTime)
+        msg = msgs[-1] if msgs else None
 
-        if power < 0:
+        # sign convention (same as the liionpack output and pandapower sgens):
+        # power > 0 = discharge (feed into the grid), power < 0 = charge
+        power = 0.0
+        if msg:
+            requested = float(msg.value()['power'])
+            if math.isnan(requested):
+                print("received NaN power, battery rests", flush=True)
+            else:
+                power = max(-self.p_max, min(self.p_max, requested))
+                if power != requested:
+                    print("requested", requested, "W, limited to", power, "W (p_max)", flush=True)
+
+        if power > 0:
             self.protocol = [
-                f"Discharge at {abs(power)} W for {self.step_length} min",
+                f"Discharge at {power} W for {self.step_length} min",
             ]
-        elif power > 0:
+        elif power < 0:
             self.protocol = [
-            f"Charge at {abs(power)} W for {self.step_length} min",
+            f"Charge at {-power} W for {self.step_length} min",
             ]
         else:
+            # liionpack only supports current and power steps, no "Rest"
             self.protocol = [
-            f"Discharge at {power} W  for {self.step_length} min",
+            f"Discharge at 0 A for {self.step_length} min",
             ]
         return power
 
     def step(self, step):
         # 5. Perform the simulation
         print("______step______", self.protocol)
+        # no stale result from the previous step if the solver fails
+        self.output = None
         self.output = lp.solve(
             netlist=self.netlist,
             parameter_values=self.parameter_values,
@@ -152,26 +165,51 @@ class liionpackAPI(object):
 
 # TODO
     def processStep(self, power):
-        self.curr_soc= (self.curr_soc*24000-power)/24000
         value = self.get_bat(self.output)
-        msg = self.producer.produce(self.bus_topic, value)
+        msg = self.producer.produce(self.bus_topic, value, timestamp=self.timeSync.currentLocalTime)
         self.timeSync.notifiyAboutSentMessage(self.bus_topic)
+        self.pv_rows.append({"time": self.timeSync.currentLocalTime, "requested_power": power, **value})
 
     def postStep(self, step, timeInMS=0):
         pass
 
-#TODO
+    @staticmethod
+    def integrate(y, t):
+        """Trapezoidal integral of y over t, 0 for a single sample"""
+        y, t = np.asarray(y, dtype=float), np.asarray(t, dtype=float)
+        if len(t) < 2:
+            return 0.0
+        return float(np.sum((y[1:] + y[:-1]) / 2 * np.diff(t)))
+
     def get_bat(self, output):
-        battery_system = {}
-        try:
-            battery_system["power"] = float(output["Pack power [W]"][-1])
-            battery_system["current"] = str(output["Pack current [A]"][-1])
-            battery_system["voltage"] = str(output["Pack terminal voltage [V]"][-1])
-            battery_system["soc"] = str(self.curr_soc)
-        except Exception as e:
-            print("failed to get battery system", flush=True)
-            print(e)
-        return battery_system
+        """
+        Updates the SoC from this step's solver output and returns the message for Battery.avsc.
+        power/current are averages over the whole step (energy and charge divided by the step length),
+        so a step the solver stopped early (voltage limit) only counts with the time it actually ran.
+        """
+        step_s = self.step_length * 60
+        if output is None:
+            print("no battery result for this step, reporting rest", flush=True)
+            charge_ah, energy_j = 0.0, 0.0
+        else:
+            t = output["Time [s]"]
+            charge_ah = self.integrate(output["Pack current [A]"], t) / 3600
+            energy_j = self.integrate(output["Pack power [W]"], t)
+            self.voltage = float(output["Pack terminal voltage [V]"][-1])
+            simulated_s = float(t[-1] - t[0]) if len(t) > 1 else 0.0
+            if simulated_s < step_s:
+                print(f"battery solver stopped after {simulated_s:.0f} of {step_s} s (voltage limit?)", flush=True)
+
+        # coulomb counting, discharge current is positive
+        self.curr_soc = min(1.0, max(0.0, self.curr_soc - charge_ah / self.capacity_ah))
+
+        # all fields are "float" in Battery.avsc, strings make the Avro serializer reject the message
+        return {
+            "power": energy_j / step_s,
+            "current": charge_ah * 3600 / step_s,
+            "voltage": self.voltage,
+            "soc": float(self.curr_soc),
+        }
 
     def destroy(self):
         """Destroys all actors"""

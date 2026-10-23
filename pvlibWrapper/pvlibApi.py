@@ -137,7 +137,8 @@ class pvlibAPI(object):
     def processStep(self):
         value = self.get_pv(self.mc_sapm.results.ac.iloc[-1])
         print("Writing msg: ", value, self.topic, flush=True)
-        msg = self.producer.produce(self.topic, value)
+        # receivers use the timestamp to process the value only in their next step
+        msg = self.producer.produce(self.topic, value, timestamp=self.timeSync.currentLocalTime)
         self.timeSync.notifiyAboutSentMessage(self.topic)
 
     def postStep(self, step, timeInMS=0):

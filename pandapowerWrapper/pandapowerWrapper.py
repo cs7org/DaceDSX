@@ -53,7 +53,7 @@ class pandapowerWrapper():
         self.sim = None
 
         self.demoMode = False
-        self.translator_consumer=None
+        self.api = None
 
     def klog(self, msg):
         print("klog:", self.statusTopic, self.instanceID + ": " + msg)
@@ -98,17 +98,9 @@ class pandapowerWrapper():
             self.parameters = sim['parameters']
         if self.sce["translators"]:
             print("We have translators")
+            # translator topics are received by the main consumer (regex ...energy.Bus) and
+            # buffered in the api, a second consumer would count every message twice
             self.other_instance_topics.append(self.topicPre + "Bus.translator.")
-            try:
-                self.buses_at_cut = self.parameters["copy_buses"].split(", ")
-            except:
-                print("No copy buses given")
-            translator_topic = self.topicPre + "Bus.translator."
-            translator_topics = []
-            for bus in self.buses_at_cut:
-                translator_topics.append(translator_topic + str(bus).replace(" ", "_"))
-
-        self.translator_consumer = KafkaConsumer(broker, registry, translator_topics, "translator_topic")
 
         print("fetching network", self.network, flush=True)
         self.resConsumer = KafkaConsumer(broker, registry, self.restopic, self.kid + ".res")
@@ -169,8 +161,10 @@ class pandapowerWrapper():
         self.producer.create_topics([self.topicPre+"bus"])
 
     def handleTimeout(self):
-        print("handleTimeout", flush=True)
-        self.startMainConsumer()
+        # restarting the consumer would re-deliver uncommitted messages, the consumer
+        # picks up new topics by itself (metadata refresh), so only report what is missing
+        print("handleTimeout: still waiting for", self.timeSync.expectedReceiveCount,
+              "received", self.timeSync.actualReceivedMsgCount, flush=True)
 
     def startMainConsumer(self):
         if (self.consumer is not None):
@@ -204,9 +198,10 @@ class pandapowerWrapper():
                 # edge = edge.replace("---2e", ".")
                 realtopic = self.topicPre + subject + "." + bus
                 # print(inMsg.topic(), "->", realtopic)
-                self.timeSync.notifiyAboutReceivedMessage(topic)
+                # buffer before counting: once TimeSync sees the count, the data must be there
                 if ".translator." in topic and self.api is not None:
                     self.api.on_translator_msg(inMsg)  # ← weiterleiten
+                self.timeSync.notifiyAboutReceivedMessage(topic)
             else:
                 self.timeSync.notifiyAboutReceivedMessage(topic)
                 print(subject, "not supported jet")
@@ -228,7 +223,6 @@ class pandapowerWrapper():
             self.klog("simulating")
 
             ### create api bridge and run  ######
-            self.api = None
             stepLengthMs = self.sim['stepLength']
             # mapFile = baseDir + self.roadMapFile
             network_file = self.network.split("///")[1]
@@ -237,7 +231,7 @@ class pandapowerWrapper():
             # print("sim_end", sim_end, "step_size", step_size, "sim_end // step_size", sim_end // step_size)
             n_steps = max(1, sim_end // step_size)
             self.bbConsumer = KafkaConsumer(broker, registry, self.scetopic, self.kid + ".sce")
-            self.api = pandapowerAPI(network_file, self.timeSync, self.bbConsumer, self.producer, self.scenarioID, self.other_instance_topics,self.instanceID, step_size, n_steps, to_observe=self.buses_to_observe(), parameters=self.parameters, translator_consumer=self.translator_consumer)
+            self.api = pandapowerAPI(network_file, self.timeSync, self.bbConsumer, self.producer, self.scenarioID, self.other_instance_topics,self.instanceID, step_size, n_steps, to_observe=self.buses_to_observe(), parameters=self.parameters)
 
             self.api.init(self.responsibility)
             self.startMainConsumer()

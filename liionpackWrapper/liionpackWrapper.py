@@ -118,8 +118,10 @@ class liionpackWrapper():
         self.producer.create_topics([self.topicPre+"battery"])
 
     def handleTimeout(self):
-        print("handleTimeout", flush=True)
-        self.startMainConsumer()
+        # restarting the consumer would re-deliver uncommitted messages, the consumer
+        # picks up new topics by itself (metadata refresh), so only report what is missing
+        print("handleTimeout: still waiting for", self.timeSync.expectedReceiveCount,
+              "received", self.timeSync.actualReceivedMsgCount, flush=True)
 
     def startMainConsumer(self):
         if (self.consumer is not None):
@@ -152,9 +154,12 @@ class liionpackWrapper():
                 # edge = edge.replace("---2e", ".")
                 realtopic = self.topicPre + subject + "." + bus
                 print(inMsg.topic(), "->", realtopic)
-                self.timeSync.notifiyAboutReceivedMessage(realtopic)
+                # buffer before counting: once TimeSync sees the count, the data must be there.
+                # count the full topic name, that is what the sender announced
+                self.api.on_msg(inMsg)
+                self.timeSync.notifiyAboutReceivedMessage(inMsg.topic())
             else:
-                self.timeSync.notifiyAboutReceivedMessage(subject)
+                self.timeSync.notifiyAboutReceivedMessage(inMsg.topic())
                 print(subject, "not supported jet")
                 return
 
@@ -169,8 +174,8 @@ class liionpackWrapper():
             stepLengthMin = self.sim['stepLength']
             stepLengthS = self.sim['stepLength'] * 60
             end = self.sce['simulationEnd']
-            self.bbConsumer = KafkaConsumer(broker, registry, self.scetopic, self.kid + ".sce")
-            self.api = liionpackAPI(self.timeSync, self.bbConsumer, self.producer, self.scenarioID, self.instanceID, stepLengthMin, self.sce['simulationEnd']/self.sim['stepLength'], to_observe=[], parameters=self.parameters)
+            # input data comes from the main consumer (see processMsg), no second consumer
+            self.api = liionpackAPI(self.timeSync, self.producer, self.scenarioID, self.instanceID, stepLengthMin, self.sce['simulationEnd']/self.sim['stepLength'], to_observe=[], parameters=self.parameters)
             self.startMainConsumer()
 
             self.api.init()
@@ -182,6 +187,7 @@ class liionpackWrapper():
                 sssl = stepLengthMin
                 self.timeSync.timeAdvance(sssl)
 
+                power = 0.0  # stays defined for processStep if prepareStep fails
                 try:
                     power = self.api.prepareStep(iteration)
                 except Exception as e:

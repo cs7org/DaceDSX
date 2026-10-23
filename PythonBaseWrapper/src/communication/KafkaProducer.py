@@ -62,6 +62,13 @@ class KafkaProducer():
                 return True
         return False
 
+    def all_topics(self):
+        topic_list=[]
+        metadata = self.admin.list_topics()
+        for t in iter(metadata.topics.values()):
+            topic_list.append(t.topic)
+        return topic_list
+
     def create_topics(self, topics):
         kafka_topics = []
         for topic in topics:
@@ -71,6 +78,12 @@ class KafkaProducer():
         topic_results = None
         if kafka_topics:
             topic_results = self.admin.create_topics(kafka_topics)
+            # wait until the topics exist, other participants look them up right after the next sync
+            for topic, f in topic_results.items():
+                try:
+                    f.result()
+                except Exception as e:
+                    print("Failed to create topic {}: {}".format(topic, e))
         return topic_results
 
     def delete_topics(self, topics):

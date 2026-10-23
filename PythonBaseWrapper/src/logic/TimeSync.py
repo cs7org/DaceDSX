@@ -87,18 +87,22 @@ class TimeSync():
                     self.expectedReceiveCount[topic] += msg['Messages'][topic]
                     continue
                 
+                # no early return here: one sync msg may announce several new topics
+                matched = False
                 for pattern in self.expectedPattern:
                     if(pattern.match(topic)):
                         if(self.logging == True):
                             print("found new topic that matches my pattern: " + topic, flush=True)
                         self.expectedReceiveCount[topic] = msg['Messages'][topic]
                         self.inferedTopics.append(topic)
-                        self.refreshLBTS()
-                        return
+                        matched = True
+                        break
                     else:
                         if(self.logging == True):
                             print(topic,"does not match pattern: " + pattern.pattern, flush=True)
-                         
+                if matched:
+                    continue
+
                 #neither pattern nor topic list is matching                    
                 if(self.logging == True):
                     print("ignoring " + topic + ("is not in my list of interest"), flush=True)

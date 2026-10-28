@@ -11,10 +11,11 @@ class _Producer:
         pass
 
     def produce(self, *args, **kwargs):
-        pass
+        if 'on_delivery' in kwargs:
+            kwargs['on_delivery'](None, object())
 
     def flush(self, *args, **kwargs):
-        pass
+        return 0
 
 
 class _Consumer:

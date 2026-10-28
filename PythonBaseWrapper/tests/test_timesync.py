@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import MagicMock
 
 import kafka_stub  # noqa: F401  must precede the wrapper imports
 from TimeSync import TimeSync
@@ -20,6 +21,12 @@ class SentMessageCountingTest(unittest.TestCase):
         producer.produce('data.topic', {'v': 1})
         producer.produce('data.topic', {'v': 2})
         self.assertEqual(timeSync.getSentMsgDiff(), {'data.topic': 2})
+
+    def test_hook_also_fires_with_delivery_timeout(self):
+        producer = KafkaProducer('broker', 'registry', 'me', useAvro=False, deliveryTimeout=1)
+        producer.on_sent = MagicMock()
+        producer.produce('data.topic', b'payload')
+        producer.on_sent.assert_called_once_with('data.topic')
 
     def test_sync_producer_is_not_counted(self):
         timeSync = TimeSync('broker', 'registry', 'sync', 'me', initNoParticipants=0, logging=False)

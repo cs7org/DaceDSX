@@ -1,5 +1,6 @@
 package eu.fau.cs7.daceDS.Component;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Comparator;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -19,9 +20,9 @@ public class ConsumerRecordComparator implements Comparator<ConsumerRecord> {
 			return a.topic().hashCode()-b.topic().hashCode();
 		}
 		if(!a.key().equals(b.key())) {
-			return a.key().hashCode()-a.key().hashCode();
+			return a.key().toString().compareTo(b.key().toString());
 		}
-		if(getSender(a)!=getSender(b)) {
+		if(!getSender(a).equals(getSender(b))) {
 			return getSender(a).hashCode()-getSender(b).hashCode();
 		}
 		return 0;
@@ -46,6 +47,6 @@ public class ConsumerRecordComparator implements Comparator<ConsumerRecord> {
 		if(h== null) {
 			return "";
 		}
-		return h.value().toString();
+		return new String(h.value(), StandardCharsets.UTF_8);
 	}
 }

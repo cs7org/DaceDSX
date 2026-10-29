@@ -8,7 +8,12 @@ In 2025, it has been relicensed under the MIT License (https://choosealicense.co
 */
 package eu.fau.cs7.daceDS.SimService;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.apache.log4j.Logger;
 
 import eu.fau.cs7.daceDS.Component.Config;
@@ -24,38 +29,36 @@ public class ExecutorThread extends Thread{
 
 	Scenario scenario;
 	String basePath;
-	String callString;
-	String killString;
+	File logFile;
+	List<String> callCmd;
+	List<String> killCmd;
 	String type;
 	String id;
 	Process proc = null;
 	long pid = -1;
 	boolean running = false;
+	boolean startFailed = false;
 	int exitVal = -1;
 
 	Logger logger = Logger.getLogger(ExecutorThread.class.getName());
 	
-	ExecutorThread(String basePath, String type, String id, Scenario scenario){
+	ExecutorThread(String basePath, String logDir, String type, String id, Scenario scenario){
 		this.basePath  = basePath;
+		this.logFile  = new File(logDir, scenario.getScenarioID() + "_" + id + ".run.log");
 		this.scenario  = scenario;
 		this.type = type;
 		this.id = id;
 		logger  = Logger.getLogger(ExecutorThread.class.getName()+"."+type+"."+id);		
-		callString = basePath+"/"+type+"/"+Config.EXECUTABLE;
-		callString += " " + scenario.getScenarioID() + " " + id;
-		
-		killString = basePath+"/"+type+"/"+Config.EXECUTABLE_KILL;
-		killString += " " + scenario.getScenarioID() + " " + id;
+		callCmd = Arrays.asList(basePath+"/"+type+"/"+Config.EXECUTABLE, scenario.getScenarioID().toString(), id);
+		killCmd = Arrays.asList(basePath+"/"+type+"/"+Config.EXECUTABLE_KILL, scenario.getScenarioID().toString(), id);
 	}
 	
 	
 	public void runKillScript() {
-		logger.info("Killstring is: " + killString);
-		Runtime rt = null;
+		logger.info("Killstring is: " + killCmd);
 		Process proc = null;
 		try {
-			rt = Runtime.getRuntime();
-			proc = rt.exec(killString);
+			proc = new ProcessBuilder(killCmd).redirectErrorStream(true).redirectOutput(ProcessBuilder.Redirect.appendTo(logFile)).start();
 			long exitVal = proc.waitFor();
 			logger.info(id + ": Exit value: " + exitVal);
 		} catch (IOException | InterruptedException e) {
@@ -65,12 +68,12 @@ public class ExecutorThread extends Thread{
 	
 	//todo: very prototypical
 	public void run() {
-		logger.info("Callstring is: " + callString);
-		Runtime rt = null;
+		logger.info("Callstring is: " + callCmd);
 		try {
 			running = true;
-			rt = Runtime.getRuntime();
-			proc = rt.exec(callString);
+			//child output is never read, so send it to a file instead of a pipe that fills up
+			Files.createDirectories(logFile.getParentFile().toPath());
+			proc = new ProcessBuilder(callCmd).redirectErrorStream(true).redirectOutput(logFile).start();
 			pid = proc.pid();
 			
 			exitVal = proc.waitFor();
@@ -78,17 +81,24 @@ public class ExecutorThread extends Thread{
 			running = false;
 			logger.info(id + ": Exit value: " + exitVal);
 		} catch (IOException | InterruptedException e) {
-			if(proc != null) proc.destroyForcibly();
-			logger.error(callString + " --> Process exception: " + e.getLocalizedMessage());
+			if(proc == null) startFailed = true;
+			else proc.destroyForcibly();
+			logger.error(callCmd + " --> Process exception: " + e.getLocalizedMessage());
 			running = false;
 		}
 		runKillScript();
 	}
 
 	public void terminate() {
-		if(proc != null && running) {
-			proc.destroy();
+		if(proc == null || !running) return;
+		proc.destroy();
+		try {
+			if(proc.waitFor(5, TimeUnit.SECONDS)) return;
+		} catch (InterruptedException e) {
+			logger.error(e.getLocalizedMessage());
 		}
+		logger.warn(id + ": did not exit after SIGTERM, killing");
+		proc.destroyForcibly();
 	}
 	
 	public long getPID(){
@@ -96,6 +106,9 @@ public class ExecutorThread extends Thread{
 	}
 	public long getExitVal(){
 		return exitVal;
+	}
+	public boolean hasStartFailed(){
+		return startFailed;
 	}
 	public boolean isRunning(){
 		return running;

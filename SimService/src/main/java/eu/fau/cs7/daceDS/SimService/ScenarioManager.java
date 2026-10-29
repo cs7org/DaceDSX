@@ -13,13 +13,16 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.regex.Pattern;
 
 import org.apache.log4j.Logger;
 
 import eu.fau.cs7.daceDS.Component.Config;
 import eu.fau.cs7.daceDS.datamodel.BB;
 import eu.fau.cs7.daceDS.datamodel.Observer;
+import eu.fau.cs7.daceDS.datamodel.Projector;
 import eu.fau.cs7.daceDS.datamodel.Scenario;
+import eu.fau.cs7.daceDS.datamodel.Translator;
 
 
 
@@ -34,9 +37,13 @@ public class ScenarioManager {
 
 	private static HashMap<String, ScenarioInstanceExecutor> runningScenarioThreads= new HashMap<String,ScenarioInstanceExecutor>();
 	private static ArrayList<String> terminatedScenarioThreads= new ArrayList<String>();
+	private static HashMap<String, String> terminationStatus = new HashMap<String,String>();
 	static Logger logger  = Logger.getLogger(ScenarioManager.class.getName());
 	private static final long MAX_AGE = 60*60000;
+	private static final long KILL_JOIN_MS = 10000;
 	private static ArrayList<String> knownSCEIDs = new ArrayList<String>();
+	//ids and types end up as process arguments and path segments
+	private static final Pattern SAFE_ID = Pattern.compile("[A-Za-z0-9._-]+");
 	
 	public ScenarioManager() {
 	}
@@ -46,6 +53,9 @@ public class ScenarioManager {
 	}
 	public static int getNoTerminatedScenarios(){
 		return terminatedScenarioThreads.size();
+	}
+	public static String getTerminationStatus(String scenario){
+		return terminationStatus.get(scenario);
 	}
 	
 	public static int monitorRunningScenarios() {
@@ -74,10 +84,11 @@ public class ScenarioManager {
 			t.kill();
 			t.interrupt();
 			try {
-				t.join();
+				t.join(KILL_JOIN_MS);
 			} catch (InterruptedException e) {
 				logger.error(e.getLocalizedMessage());
 			}
+			if(t.isAlive()) logger.warn("ScenarioRunner: "+scenario+" still alive "+KILL_JOIN_MS+" ms after kill");
 			logger.info("ScenarioRunner:killed thread for "+scenario);
 		//terminatedScenarioThreads.add(scenario);
 		//runningScenarioThreads.remove(scenario);
@@ -119,6 +130,7 @@ public class ScenarioManager {
 		
 		for(String scenario : newlyTerminated) {
 			ScenarioInstanceExecutor r = runningScenarioThreads.get(scenario);
+			terminationStatus.put(scenario, r.getTerminationStatus());
 			runningScenarioThreads.remove(scenario);
 			//todo: cleanup, delete files, topics
 			//Orphaned sim instances need to get informed, so they can stop waiting. they could also use the timeoutLimit to die
@@ -130,7 +142,36 @@ public class ScenarioManager {
 	}
 
 
+	/** Returns the first id or type that does not match SAFE_ID, or null if all are safe. */
+	static String findInvalidID(Scenario scenario) {
+		ArrayList<CharSequence> ids = new ArrayList<CharSequence>();
+		ids.add(scenario.getScenarioID());
+		for(BB bb : scenario.getBuildingBlocks()) {
+			ids.add(bb.getInstanceID());
+			ids.add(bb.getType());
+		}
+		for(Projector proj : scenario.getProjectors()) {
+			ids.add(proj.getProjectorID());
+			ids.add(proj.getType());
+		}
+		for(Translator trans : scenario.getTranslators()) {
+			ids.add(trans.getTranslatorID());
+			ids.add(trans.getType());
+		}
+		for(CharSequence id : ids) {
+			if(id == null || !SAFE_ID.matcher(id).matches()) return String.valueOf(id);
+		}
+		return null;
+	}
+
 	public static int addScenarioRun(Scenario scenario, long timestamp) {
+
+		//check if ids and types are safe to be used in a command line
+		String invalidID = findInvalidID(scenario);
+		if(invalidID != null) {
+			logger.info("RunSimFromKafka: Rejecting Scenario " + scenario.getScenarioID()+" request. Id or type '"+invalidID+"' does not match "+SAFE_ID.pattern());
+			return 4;
+		}
 
 		//check if request contains old sce id
 		if(knownSCEIDs.contains(scenario.getScenarioID().toString()))  {

@@ -11,3 +11,7 @@ _data/runtime/
 /_data/results/*
 !/_data/results/.gitkeep
 .idea/
+.DS_Store
+.venv/
+.pytest_cache/
+PR*.md

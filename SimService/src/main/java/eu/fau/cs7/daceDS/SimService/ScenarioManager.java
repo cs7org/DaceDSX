@@ -39,7 +39,6 @@ public class ScenarioManager {
 	private static ArrayList<String> terminatedScenarioThreads= new ArrayList<String>();
 	private static HashMap<String, String> terminationStatus = new HashMap<String,String>();
 	static Logger logger  = Logger.getLogger(ScenarioManager.class.getName());
-	private static final long MAX_AGE = 60*60000;
 	private static final long KILL_JOIN_MS = 10000;
 	private static ArrayList<String> knownSCEIDs = new ArrayList<String>();
 	//ids and types end up as process arguments and path segments
@@ -58,14 +57,21 @@ public class ScenarioManager {
 		return terminationStatus.get(scenario);
 	}
 	
+	/** Configured scenarioMaxAge in ms, or the default if the property is missing or invalid. */
+	static long getMaxAge() {
+		long configured = Config.getLong(Config.SCENARIO_MAX_AGE);
+		return configured > 0 ? configured : Config.DEFAULT_SCENARIO_MAX_AGE_MS;
+	}
+
 	public static int monitorRunningScenarios() {
 		//logger.info("There are "+runningScenarioThreads.size()+" running scenarios");
 		int killCount = 0;
+		long maxAge = getMaxAge();
 		for(Entry<String, ScenarioInstanceExecutor> entry : runningScenarioThreads.entrySet()) {
 			//entry.getValue().printStatus();
 			long age = entry.getValue().getAge();
-			if(age > MAX_AGE) {
-				logger.info(entry.getKey() + " is running for too long ("+age+") --> killing all related threads and spawned processes");
+			if(age > maxAge) {
+				logger.info(entry.getKey() + " is running for too long ("+age+" ms > scenarioMaxAge "+maxAge+" ms) --> killing all related threads and spawned processes");
 				killScenario(entry.getKey());
 				killCount++;
 			}

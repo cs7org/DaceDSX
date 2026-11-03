@@ -3,11 +3,15 @@ package eu.fau.cs7.daceDS.SimService;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
+import org.junit.After;
 import org.junit.Test;
 
+import eu.fau.cs7.daceDS.Component.Config;
 import eu.fau.cs7.daceDS.datamodel.BB;
 import eu.fau.cs7.daceDS.datamodel.Projector;
 import eu.fau.cs7.daceDS.datamodel.Scenario;
@@ -45,5 +49,27 @@ public class ScenarioManagerTest {
 	@Test
 	public void acceptsSafeIdsAndTypes() {
 		assertNull(ScenarioManager.findInvalidID(scenario("sce_1.a-b", "sim0", "SumoWrapper")));
+	}
+
+	static Properties configProps() throws Exception {
+		Field f = Config.class.getDeclaredField("prop");
+		f.setAccessible(true);
+		return (Properties) f.get(null);
+	}
+
+	@After
+	public void clearMaxAge() throws Exception {
+		configProps().remove(Config.SCENARIO_MAX_AGE);
+	}
+
+	@Test
+	public void maxAgeComesFromConfigWithDefault() throws Exception {
+		assertEquals(Config.DEFAULT_SCENARIO_MAX_AGE_MS, ScenarioManager.getMaxAge());
+
+		configProps().setProperty(Config.SCENARIO_MAX_AGE, "7200000");
+		assertEquals(7200000L, ScenarioManager.getMaxAge());
+
+		configProps().setProperty(Config.SCENARIO_MAX_AGE, "abc");
+		assertEquals(Config.DEFAULT_SCENARIO_MAX_AGE_MS, ScenarioManager.getMaxAge());
 	}
 }

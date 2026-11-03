@@ -61,6 +61,9 @@ public class Config
 	public static final String SCHEMA_REGISTRY = "schemaRegistry";
 	public static final String KAFKA_BROKER = "kafkaBroker";
 	public static final String REQUEST_MAX_AGE = "requestMaxAge";
+	/* wall-clock run time in ms after which a scenario is killed; default 60 min */
+	public static final String SCENARIO_MAX_AGE = "scenarioMaxAge";
+	public static final long DEFAULT_SCENARIO_MAX_AGE_MS = 60*60000;
 
 	/* topic property names */
 	public static final String CHANNEL_ORCHESTRATION = "channelOrchestration";

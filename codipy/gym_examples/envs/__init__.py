@@ -1,0 +1,7 @@
+#from gym_examples.envs.grid_world import GridWorldEnv
+from gym_examples.envs.chunksimulationDQN_2 import env_v2
+from gym_examples.envs.chunksimulationDQN_3 import env_v3
+from gym_examples.envs.chunksimulationDQN_4 import env_v4
+from gym_examples.envs.chunksimulationA2C_1 import env_a2c
+from gym_examples.envs.chunksimulationA2C_2 import env_a2c_v2
+from gym_examples.envs.chunksimulationGymEnvDL import chunksimulation_env

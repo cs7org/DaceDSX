@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<configuration>
+
+    <input>
+	    <sumo-config value="/home/niebisch/Documents/manhatten_grid/manhattengrid_network_traci_only_144.sumocfg"/>
+        <sumo-path value="/home/niebisch/Documents/sumo/bin/sumo-gui"/>
+        <sumo-buildings value="/home/niebisch/Documents/InTAS_small_v2/scenario/poly.add.xml"/>
+        <sumo-polygons value="/home/niebisch/Documents/InTAS_small_v2/scenario/poly.add.xml"/>
+        <sumo-route value="/home/niebisch/Documents/manhatten_grid/manhatten_144.rou.xml" />
+        <sumo-network value="/home/niebisch/Documents/manhatten_grid/manhattengrid.net.xml"/>
+        <ap-coordinates value ="/home/niebisch/Documents/chunksimulation/cluster_wlan_test/ap_coords.txt" />
+
+    </input>
+
+    <output>
+        <output-path value="rl_tests/result_files/manhattan"/>
+        <result-file-conversion value="true"/>
+    </output>
+    <time>
+        <simulate-duration value="true"/>
+        <duration value="3600"/>
+        <number-of-routes value="3"/>
+    </time>
+
+    <communication>
+        <!-- value has to be one of these: "p", "bd", "lte", "nr" (-> 802.11p/bd, LTE/ 5G NR V2X) 'n/a' -->
+        <standard value="p"/>
+        <!--  MCS Values:
+                  11p: BPSK 1/2 (0), BPSK 3/4 (1), QPSK 1/2 (2), QPSK 3/4 (3),
+                    16-QAM 1/2 (4), 16-QAM 3/4 (5), 64-QAM 2/3 (6), 64-QAM 3/4 (7)
+                        #####################################################
+                  11bd: BPSK 1/2 (0), QPSK 1/2 (1), QPSK 3/4 (2), 16-QAM 1/2 (3),
+                    16-QAM 3/4 (4), 64-QAM 2/3 (5), 64-QAM 3/4 (6)
+                    the other MCS are currently not available because there wasn't enough data
+                  ########################################################################
+                  ltev2x: QPSK 0.13 (0), QPSK 0.47 (6), QPSK 0.55 (7), QPSK 0.81 (10),
+                    16-QAM 0.52 (13), 16-QAM 0.75 (17), 64-QAM 0.65 (21), 64-QAM 0.93 (27)
+                        #####################################################
+                  nrv2x: QPSK 0.12 (0), QPSK 0.44 (6), QPSK 0.51 (7), 16-QAM 0.33 (10),
+                    16-QAM 0.48 (13), 64-QAM 0.45 (17), 64-QAM 0.65 (21), 64-QAM 0.92 (27)
+        -->
+        <mcs value="2"/>
+    </communication>
+
+    <constants>
+        <gain value="1"/>
+        <transmission-power value="20"/>
+        <pathloss value="47.86"/>
+        <noisepower value="-98"/><!--95-->
+        <two-ray-ground value="false"/>
+        <log-distance value="false"/>
+        <log-normal-shadowing value="false"/>
+        <log-normal-shadowing-dual-slope value="false"/>
+        <loss-exponent value="2.0"/><!--2.75-->
+        <loss-exponent2 value="6.34"/>
+        <sigma value="3.9"/>
+        <sigma2 value="5.2"/>
+        <antenna-height value="1.5"/>
+    </constants>
+
+    <parameter>
+        <v2v-distance value="200.0"/>
+        <number-vehicles value="144"/> <!--288  - 72-->
+        <additional-vehicles value="0"/>
+        <update-size value="200000000"/>
+        <iterations value="1"/>
+        <ap-placement value="coords"/>
+        <v2v-device value="on"/>
+        <wlan-device value="off"/>
+        <wlan-distance value="200.0"/>
+        <fixed-randomness value = "true"/>
+        <wlan-heartbeat-strategy value = "random"/><!--random, counter, weighted counter, most recent, most requested"/>random, counter, weighted counter, most recent, most requested"/> -->
+        <v2v-heartbeat-interval value = "10.0"/>
+        <wlan-data-rate value = "60000"/>
+        <v2v-data-rate value = "60000"/>
+        <wlan-ap-count value="750"/>
+        <v2v-heartbeat-strategy value = "most recent"/><!--earliest, counter, counter relevance weighted, counter time weighted, random, most relevant-->
+        <heartbeat-encoding value = "hybrid"/><!--rle, bitmask, hybrid-->
+        <additional-attenuation value ="0.74"/> <!--"0.35, 0.56, 0.74, 0.91, 1.06, 1.25"/>-->
+        <seeding-strategy value = "at least once"/><!--at least once, random, blocks, none 2660-->
+        <wlan-beacon-interval value = "1.0"/>
+        <wlan-equipment-percentage value="100"/>
+        <v2v-equipment-percentage value="100"/>
+        <wlan-ap_max_connections value = "1000" />
+        <wlan-ap-percentage value = "0"/>
+
+    </parameter>
+
+    <parameter-variation>
+        <initial-seeds value="50"/>
+    </parameter-variation>
+
+    <processing>
+        <processes value="8"/>
+    </processing>
+
+
+</configuration>
+
+

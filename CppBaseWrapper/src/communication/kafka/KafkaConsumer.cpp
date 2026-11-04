@@ -133,8 +133,10 @@ void KafkaConsumer::msg_consume(RdKafka::Message *message, void *opaque) {
                                     sender =  static_cast<const char *>(hdr.value());
 
                                     //is this our own message? -> ignore it
-                                    if(sender.find(Config::getInstance()->getSimulatorID())  != std::string::npos ){
-                                        KDBGCB("ignoring own message! sender=" << sender<< ", own id="<<Config::getInstance()->getSimulatorID());
+                                    //sender is built as <scenarioID>_<simulatorID>_<prodid> (see KafkaProducer::init), so match exactly that prefix
+                                    std::string ownPrefix = Config::getInstance()->getScenarioID()+"_"+Config::getInstance()->getSimulatorID()+"_";
+                                    if(sender.compare(0, ownPrefix.size(), ownPrefix) == 0){
+                                        KDBGCB("ignoring own message! sender=" << sender<< ", own prefix="<<ownPrefix);
                                         consumer->commitSync();
                                         return;
                                     } 

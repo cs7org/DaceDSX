@@ -7,6 +7,7 @@ This code was originally published under the Apache 2.0 License (http://www.apac
 In 2025, it has been relicensed under the MIT License (https://choosealicense.com/licenses/mit/) with the explicit permission of all copyright holders.
 */
 package eu.fau.cs7.daceDS.Kafka;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -178,7 +179,7 @@ public class ConsumerImplKafka<T> extends Consumer<T>
 		if(h== null) {
 			return "";
 		}
-		return h.value().toString();
+		return new String(h.value(), StandardCharsets.UTF_8);
 	}
 
 }

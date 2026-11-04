@@ -1,0 +1,4 @@
+pypsa[hdf5]==0.35.2
+numpy<2
+pandas<3
+openpyxl==3.1.5

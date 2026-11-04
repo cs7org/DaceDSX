@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 /** 
@@ -31,7 +31,7 @@ public abstract class Consumer<T>
 	protected Thread t;	
 	protected boolean countingConsumer = true;
 	protected boolean isListening;
-	protected static HashMap<String, Long> receivedCounting = new HashMap<String, Long>();
+	protected static ConcurrentHashMap<String, Long> receivedCounting = new ConcurrentHashMap<String, Long>();
 	protected static List<String> subscribedTopics = new ArrayList<String>();
 	protected static List<String> countingSubscribedTopics = new ArrayList<String>();
 	protected static List<Pattern> subscribedPatterns = new ArrayList<Pattern>();//Pattern.compile("undefined");
@@ -86,7 +86,7 @@ public abstract class Consumer<T>
 		return pstr;
 	}
 
-	public static HashMap<String, Long> getReceivedCounting(){
+	public static ConcurrentHashMap<String, Long> getReceivedCounting(){
 		return receivedCounting;
 	}
 

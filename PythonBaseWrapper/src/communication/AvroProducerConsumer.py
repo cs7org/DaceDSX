@@ -31,6 +31,27 @@ from confluent_kafka.avro.serializer import (SerializerError,  # noqa
 from confluent_kafka.avro.serializer.message_serializer import MessageSerializer
 from confluent_kafka.serialization import StringSerializer,SerializationContext,MessageField
 from confluent_kafka.serialization import StringDeserializer,SerializationContext,MessageField
+from functools import partial
+import math
+
+
+def create_schema_registry(config):
+    # The legacy client otherwise makes HTTP calls without a deadline. The
+    # optional setting is consumed here, before passing its config to Confluent.
+    config = dict(config)
+    timeout = config.pop('request.timeout', None)
+    if timeout is not None and (not math.isfinite(timeout) or timeout <= 0):
+        raise ValueError("request.timeout must be finite and positive")
+    client = CachedSchemaRegistryClient(config)
+    if timeout is not None:
+        for name in ('_session', '_https_session'):
+            session = getattr(client, name, None)
+            if session is not None:
+                options = {'timeout': timeout}
+                if name == '_https_session':
+                    options['retries'] = False
+                session.request = partial(session.request, **options)
+    return client
 
 class AvroProducerStrKey(Producer):
     def __init__(self, config, default_key_schema=None,
@@ -50,7 +71,7 @@ class AvroProducerStrKey(Producer):
                    for key, value in config.items() if not key.startswith("schema.registry")}
 
         if schema_registry is None:
-            schema_registry = CachedSchemaRegistryClient(sr_conf)
+            schema_registry = create_schema_registry(sr_conf)
         elif sr_conf.get("url", None) is not None:
             raise ValueError("Cannot pass schema_registry along with schema.registry.url config")
 
@@ -96,7 +117,7 @@ class AvroConsumerStrKey(Consumer):
                    for key, value in config.items() if not key.startswith("schema.registry")}
 
         if schema_registry is None:
-            schema_registry = CachedSchemaRegistryClient(sr_conf)
+            schema_registry = create_schema_registry(sr_conf)
         elif sr_conf.get("url", None) is not None:
             raise ValueError("Cannot pass schema_registry along with schema.registry.url config")
 

@@ -41,6 +41,7 @@ void TimeSync::calcLBTS() {
 // new version
 void TimeSync::handleTopicSyncMsgRequest(datamodel::SyncMsg s) {
     DS_SYNC_DBG("participantID=" << participantID << " processRequest " << s.Sender << "|" << s.Time);
+    std::unique_lock<std::mutex> lk(cv_m);
     if (timeRequests.count(s.Sender) == 0 || s.Time > timeRequests[s.Sender]) {
         timeRequests[s.Sender] = s.Time;
     }
@@ -62,6 +63,7 @@ void TimeSync::handleTopicSyncMsgRequest(datamodel::SyncMsg s) {
     }
 
     calcLBTS();
+    lk.unlock();
     tick();
 }
 
@@ -70,6 +72,7 @@ void TimeSync::handleTopicSyncMsgJoin(datamodel::SyncMsg syncMsg) {
 }
 
 void TimeSync::handleTopicSyncMsgLeave(datamodel::SyncMsg syncMsg) {
+    std::lock_guard<std::mutex> lk(cv_m);
     syncedParticipants--;
     if (timeRequests.count(syncMsg.Sender) != 0) {
         timeRequests.erase(syncMsg.Sender);
@@ -79,6 +82,7 @@ void TimeSync::handleTopicSyncMsgLeave(datamodel::SyncMsg syncMsg) {
 
 //use async wait
 void TimeSync::tick() {
+    std::lock_guard<std::mutex> lk(cv_m);
     cv.notify_all();
 }
 
@@ -117,8 +121,11 @@ void TimeSync::timeAdvance(int64_t stepInMS) {
     DS_SYNC_DBG("Sending wish to proceed to " << newkafkatime);
     while (!producer->publish(syncTopic, out, oldTime)) {
     }
-    timeRequests[participantID] = newkafkatime;
-    calcLBTS();
+    {
+        std::lock_guard<std::mutex> lk(cv_m);
+        timeRequests[participantID] = newkafkatime;
+        calcLBTS();
+    }
     tick();
 
     {
@@ -164,7 +171,10 @@ void TimeSync::timeAdvanceToAbsolutePoint(int64_t newkafkatime) {
     DS_SYNC_DBG("Sending timeAdvanceToAbsolutePoint wish to proceed to " << newkafkatime);
     while (!producer->publish(syncTopic, out, getLBTSInMS())) {
     }
-    timeRequests[participantID] = newkafkatime;
+    {
+        std::lock_guard<std::mutex> lk(cv_m);
+        timeRequests[participantID] = newkafkatime;
+    }
 
     {
         std::unique_lock<std::mutex> lk(cv_m);
@@ -183,6 +193,7 @@ void TimeSync::timeAdvanceToAbsolutePoint(int64_t newkafkatime) {
 }
 
 bool TimeSync::msgsOK() {
+    std::lock_guard<std::mutex> lock(Consumer::countingMutex);
     for (auto entry : expectedMessages) {
         std::string topic = entry.first;
         int64_t expectedNum = entry.second;
@@ -226,8 +237,11 @@ void TimeSync::joinTiming(int64_t time) {
 
     std::vector<char> out = AvroHelper::getInstance()->encodeSyncMsg(s);
     producer->publish(syncTopic, out, 0L);
-    timeRequests[participantID] = time;
-    calcLBTS();
+    {
+        std::lock_guard<std::mutex> lk(cv_m);
+        timeRequests[participantID] = time;
+        calcLBTS();
+    }
     tick();
 
     std::unique_lock<std::mutex> lk(cv_m);

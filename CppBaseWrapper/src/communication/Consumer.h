@@ -10,6 +10,7 @@ In 2025, it has been relicensed under the MIT License (https://choosealicense.co
 
 #include <map>
 #include <memory>
+#include <mutex>
 #include <regex>
 #include <string>
 #include <vector>
@@ -46,6 +47,7 @@ class Consumer {
 
     /*counting*/
     static std::map<std::string, int64_t> countingReceiveCounter;
+    static std::mutex countingMutex;
     static std::vector<std::string> countingExpectedTopics;
     static std::vector<std::string> countingExpectedPatterns;
     static std::string getExpectation(std::string topic);

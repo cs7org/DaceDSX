@@ -129,7 +129,7 @@ public class TimeSync implements ConsumerCallbackImplKafka {
 		return (targetTime == actualTime && targetEpoch <= actualEpoch) || (targetTime < actualTime);
 	}
 	static boolean receivedMsgsOK(){
-		HashMap<String, Long> received = ConsumerImplKafka.getReceivedCounting();
+		Map<String, Long> received = ConsumerImplKafka.getReceivedCounting();
 		for(Entry<String, Long> entry : expectedMsgs.entrySet()) {
 			String expectedTopic = entry.getKey();
 			Long expectedNum = entry.getValue();

@@ -330,8 +330,8 @@ class pandapowerAPI(object):
         for bus in self.buses_at_cut:
             topic = self.get_topic(bus)
             value = self.get_bus(bus, step)
+            # counted for the sync barrier by producer.on_sent (set in pandapowerWrapper)
             msg = self.producer.produce(topic, value, timestamp=self.timeSync.currentLocalTime)
-            self.timeSync.notifiyAboutSentMessage(topic)
         for i, idx in enumerate(self.network.bus.index):
             if self.bus_vm is not None:
                 col = self.bus_vm.columns[i]
@@ -513,8 +513,8 @@ class pandapowerAPI(object):
         for bus in self.to_observe:
             topic = self.get_topic(bus)
             value = self.get_bus(bus, snapshot)
+            # counted for the sync barrier by producer.on_sent (set in pandapowerWrapper)
             msg = self.producer.produce(topic, value, timestamp=self.timeSync.currentLocalTime)
-            self.timeSync.notifiyAboutSentMessage(topic)
 
 
     def get_topic(self, string):

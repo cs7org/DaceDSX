@@ -209,8 +209,8 @@ public class SimulationService
 						}
 					int killed = ScenarioManager.monitorRunningScenarios();
 					if(killed > 0){
-						publishStatus(killed + " scenario was killed for running longer than maxSimTime.");
-						logger.info(killed + " scenario was killed for running longer than maxSimTime.");
+						publishStatus(killed + " scenario was killed for running longer than scenarioMaxAge.");
+						logger.info(killed + " scenario was killed for running longer than scenarioMaxAge.");
 					}
 
 					monitorChanges();
@@ -238,7 +238,7 @@ public class SimulationService
 		ArrayList<String> ended = ScenarioManager.cleanTerminatedScenarios();
 		for(String scen : ended) {
 			logger.info(scen + " was ended ");
-			publishStatus(scen + " was terminated.");
+			publishStatus(ScenarioManager.getTerminationStatus(scen));
 			//getResults(scen);
 		}
 

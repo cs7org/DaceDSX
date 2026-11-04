@@ -30,6 +30,7 @@ import pandapower as pp
 import json
 import time
 from MessageBuffer import MessageBuffer
+from ResultDir import result_dir
 
 pd.options.mode.chained_assignment = None
 
@@ -587,7 +588,7 @@ class pandapowerAPI(object):
         df_bus = pd.DataFrame(bus_rows)
         df_line = pd.DataFrame(line_rows)
 
-        with pd.ExcelWriter(f"../_data/results/powerflow_results_{self.scenarioID}_{self.instanceID}.xlsx",
+        with pd.ExcelWriter(result_dir(self.scenarioID, self.instanceID) / "results.xlsx",
                             engine="openpyxl") as writer:
             df_bus.to_excel(writer, sheet_name="Bus", index=False)
             df_line.to_excel(writer, sheet_name="Line", index=False)

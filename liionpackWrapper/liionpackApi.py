@@ -31,6 +31,7 @@ import numpy as np
 import math
 import time
 from MessageBuffer import MessageBuffer
+from ResultDir import result_dir
 
 
 
@@ -227,6 +228,6 @@ class liionpackAPI(object):
 
     def write_results(self):
             df_bus = pd.DataFrame(self.pv_rows)
-            with pd.ExcelWriter(f"powerflow_results_{self.scenarioID}_{self.instanceID}.xlsx",
+            with pd.ExcelWriter(result_dir(self.scenarioID, self.instanceID) / "results.xlsx",
                                 engine="openpyxl") as writer:
-                df_bus.to_excel(writer, sheet_name="Bus", index=False)
+                df_bus.to_excel(writer, sheet_name="Battery", index=False)

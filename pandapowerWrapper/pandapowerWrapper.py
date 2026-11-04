@@ -9,6 +9,7 @@ this_directory=os.path.dirname(os.path.abspath(__file__))
 sys.path.append(this_directory+'/../PythonBaseWrapper/src/logic')
 sys.path.append(this_directory+'/../PythonBaseWrapper/src/communication')
 from TimeSync import TimeSync
+from ResultDir import save_scenario
 from KafkaConsumer import KafkaConsumer
 from KafkaProducer import KafkaProducer
 from pandapowerApi import pandapowerAPI
@@ -231,6 +232,7 @@ class pandapowerWrapper():
             # print("sim_end", sim_end, "step_size", step_size, "sim_end // step_size", sim_end // step_size)
             n_steps = max(1, sim_end // step_size)
             self.bbConsumer = KafkaConsumer(broker, registry, self.scetopic, self.kid + ".sce")
+            save_scenario(self.scenarioID, self.sce)
             self.api = pandapowerAPI(network_file, self.timeSync, self.bbConsumer, self.producer, self.scenarioID, self.other_instance_topics,self.instanceID, step_size, n_steps, to_observe=self.buses_to_observe(), parameters=self.parameters)
 
             self.api.init(self.responsibility)
@@ -281,8 +283,8 @@ class pandapowerWrapper():
             print("main loop catched exception - ^^^^^^^")
 
         finally:
-            self.api.write_results()
             if self.api is not None:
+                self.api.write_results()
                 self.api.destroy()
             if self.consumer is not None:
                 self.consumer.stop()

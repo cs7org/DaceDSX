@@ -9,6 +9,7 @@ this_directory=os.path.dirname(os.path.abspath(__file__))
 sys.path.append(this_directory+'/../PythonBaseWrapper/src/logic')
 sys.path.append(this_directory+'/../PythonBaseWrapper/src/communication')
 from TimeSync import TimeSync
+from ResultDir import save_scenario
 from KafkaConsumer import KafkaConsumer
 from KafkaProducer import KafkaProducer
 from pvlibApi import pvlibAPI
@@ -171,6 +172,7 @@ class pvlibWrapper():
             stepLengthS = self.sim['stepLength'] * 60
             end = self.sce['simulationEnd']
             # self.bbConsumer = KafkaConsumer(broker, registry, self.scetopic, self.kid + ".sce")
+            save_scenario(self.scenarioID, self.sce)
             self.api = pvlibAPI(self.timeSync, self.producer, self.scenarioID, self.instanceID, stepLengthMin, self.sce['simulationEnd']/self.sim['stepLength'], to_observe=[], parameters=self.parameters)
             self.startMainConsumer()
 
@@ -221,8 +223,8 @@ class pvlibWrapper():
             print("main loop catched exception - ^^^^^^^")
 
         finally:
-            self.api.write_results()
             if self.api is not None:
+                self.api.write_results()
                 self.api.destroy()
             if self.consumer is not None:
                 self.consumer.stop()

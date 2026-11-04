@@ -27,6 +27,7 @@ from __future__ import print_function
 import pvlib
 import pandas as pd
 import numpy as np
+from ResultDir import result_dir
 
 pd.options.mode.chained_assignment = None
 
@@ -173,6 +174,6 @@ class pvlibAPI(object):
             for col in df_bus.select_dtypes(include=["datetimetz"]).columns:
                 df_bus[col] = df_bus[col].dt.tz_localize(None)
 
-            with pd.ExcelWriter(f"powerflow_results_{self.scenarioID}_{self.instanceID}.xlsx",
+            with pd.ExcelWriter(result_dir(self.scenarioID, self.instanceID) / "results.xlsx",
                                 engine="openpyxl") as writer:
-                df_bus.to_excel(writer, sheet_name="Bus", index=False)
+                df_bus.to_excel(writer, sheet_name="PV", index=False)

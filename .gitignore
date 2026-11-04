@@ -1,5 +1,7 @@
 results/*
 !results/.gitkeep
+_data/results/*
+!_data/results/.gitkeep
 __pycache__/
 target/
 docker-compose.yml

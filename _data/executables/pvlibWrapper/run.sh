@@ -2,7 +2,6 @@
 # $1: scenario id
 # $2: simulator id
 
-echo "BIN HIER" > out.txt
 SCENARIOID=$1
 SIMID=$2
 

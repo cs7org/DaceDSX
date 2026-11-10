@@ -64,6 +64,9 @@ class pandapowerAPI(object):
         self.line_p = None
         self.trafo_p = None
         self.history = []
+        # power flow results per step, written by write_results
+        self.bus_rows = []
+        self.line_rows = []
 
         self.timeSync = timesync
         self.to_observe = to_observe
@@ -359,6 +362,38 @@ class pandapowerAPI(object):
                         pass
 
         self.history.append({'step': step})
+        self.log_results(step)
+
+    def log_results(self, step):
+        """Stores the power flow result of the current time; a repeated power flow in the same step
+        (see postStep) replaces the rows of the earlier one."""
+        t = self.timeSync.currentLocalTime
+        self.bus_rows = [r for r in self.bus_rows if r["time"] != t]
+        self.line_rows = [r for r in self.line_rows if r["time"] != t]
+        if self.three_phase:
+            res_bus, vm, va, p, q = self.network.res_bus_3ph, "vm_a_pu", "va_a_degree", "p_a_mw", "q_a_mvar"
+            res_line, lp, lq = self.network.res_line_3ph, "p_a_from_mw", "q_a_from_mvar"
+        else:
+            res_bus, vm, va, p, q = self.network.res_bus, "vm_pu", "va_degree", "p_mw", "q_mvar"
+            res_line, lp, lq = self.network.res_line, "p_from_mw", "q_from_mvar"
+        for idx in self.network.bus.index:
+            self.bus_rows.append({
+                "time": t,
+                "bus": idx,
+                "name": self.network.bus.at[idx, "name"],
+                "v_mag": res_bus.at[idx, vm],
+                "v_ang": res_bus.at[idx, va],
+                "p": res_bus.at[idx, p],
+                "q": res_bus.at[idx, q]
+            })
+        for idx in self.network.line.index:
+            self.line_rows.append({
+                "time": t,
+                "line": idx,
+                "name": self.network.line.at[idx, "name"],
+                "p0": res_line.at[idx, lp],
+                "q1": res_line.at[idx, lq]
+            })
 
     def postStep(self, step, timeInMS=0):
         print("___postStep___", flush=True)
@@ -554,39 +589,8 @@ class pandapowerAPI(object):
 
     def write_results(self):
         print("____write_results____", flush=True)
-        bus_rows = []
-        line_rows = []
-
-        for values in self.network.bus.iterrows():
-            bus_id = values[0]
-            if self.three_phase:
-                v_mag = self.network.res_bus_3ph.vm_a_pu[values[0]]
-                v_ang = self.network.res_bus_3ph.va_a_degree[values[0]]
-            else:
-                v_mag = self.network.res_bus.vm_pu[values[0]]
-                v_ang = self.network.res_bus.va_degree[values[0]]
-            bus_rows.append({
-                "bus": bus_id,
-                "v_mag": v_mag,
-                "v_ang": v_ang
-            })
-
-        for values in self.network.line.iterrows():
-            if self.three_phase:
-                p0 = self.network.res_line_3ph.p_a_from_mw[values[0]]
-                q0 = self.network.res_line_3ph.q_a_from_mvar[values[0]]
-            else:
-                p0 = self.network.res_line.p_from_mw[values[0]]
-                q0 = self.network.res_line.q_from_mvar[values[0]]
-            line_id = values[0]
-            line_rows.append({
-                "line": line_id,
-                "p0": p0,
-                "q1": q0
-            })
-
-        df_bus = pd.DataFrame(bus_rows)
-        df_line = pd.DataFrame(line_rows)
+        df_bus = pd.DataFrame(self.bus_rows)
+        df_line = pd.DataFrame(self.line_rows)
 
         with pd.ExcelWriter(result_dir(self.scenarioID, self.instanceID) / "results.xlsx",
                             engine="openpyxl") as writer:

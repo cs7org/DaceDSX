@@ -21,12 +21,12 @@ import yaml
 from  time import sleep
 
 config = configparser.ConfigParser()
-config.read('py_config.properties')
+config.read(this_directory+'/config.properties')
 broker = config["general"]["kafkaBroker"]
 registry = config["general"]["schemaRegistry"]
 baseDir = "/daceDS/CarlaWrapper/tmp/"
 schemaPath = this_directory+"/../AvroSchemas/"
-onto = get_ontology("file://../Translators/ontology.owl").load()
+onto = get_ontology("file://"+this_directory+"/ontology.owl").load()
 
 @dataclass
 class Attribute:
@@ -354,10 +354,10 @@ class OntologyTransformer():
 
         G = self.build_graph()
         for layer in self.layerA:
-            yaml_paths.add("../_data/layers/"+str(layer)+".yml")
+            yaml_paths.add(this_directory+"/../_data/layers/"+str(layer)+".yml")
             self.has_descendant(G, layer, "ElectricalEnergy")
         for layer in self.layerB:
-            yaml_paths.add("../_data/layers/"+str(layer)+".yml")
+            yaml_paths.add(this_directory+"/../_data/layers/"+str(layer)+".yml")
             self.has_descendant(G, layer, "ElectricalEnergy")
         for path in yaml_paths:
             yamls.append(self.load_yaml(path))

@@ -28,18 +28,21 @@ from pathlib import Path
 import pandas as pd
 import pandapower as pp
 import json
-import time
-from MessageBuffer import MessageBuffer
+from MessageBuffer import MessageBuffer, collectPeerMsgs
 from ResultDir import result_dir
 
 pd.options.mode.chained_assignment = None
+
+# boundary values at the copy buses count as unchanged below this difference (pu, degree, MW, MVAr)
+COUPLING_TOL = 1e-6
+COUPLING_MAX_ITERATIONS = 50
 
 
 class pandapowerAPI(object):
     """ Class representing the surrounding environment """
 
     def __init__(self, network_path, timesync, consumer, producer, scenarioID, other_instance_topics, instanceID,
-                 step_length=3600, simulationEnd=24, w="", wcb=None, to_observe=None, parameters=[]):
+                 step_length=3600, simulationEnd=24, w="", wcb=None, to_observe=None, parameters=[], peers=None):
         # print("\n\n_____init_____\n\n", flush=True)
         if to_observe is None:
             to_observe = []
@@ -71,6 +74,10 @@ class pandapowerAPI(object):
         self.timeSync = timesync
         self.to_observe = to_observe
         self.buses_at_cut = []
+        # other power flow instances and the buses they couple at, from the scenario
+        self.peers = peers or {}
+        # topics of other power flow instances at the copy buses, set in init
+        self.ghost_topics = []
 
         # filled by the wrapper's main consumer thread, read in prepareStep
         self.translator_inbox = MessageBuffer()
@@ -207,7 +214,6 @@ class pandapowerAPI(object):
                 self.create_interface()
             except:
                 print("No copy buses given")
-        topics = []
         topics_to_create = []
         for bus in self.to_observe:
             topics_to_create.append(self.get_topic(bus))
@@ -220,29 +226,20 @@ class pandapowerAPI(object):
                     topics_to_create.append(tpc + str(bus).replace(" ", "_"))
         for ghost in self.buses_at_cut:
             topics_to_create.append(self.get_topic(ghost))
-            for topic in self.get_ghost_topics(ghost):
-                if self.producer.topic_exists(topic):
-                    topics.append(topic)
+        # the peers' topics are known from the scenario, creating them here as well makes the
+        # subscription independent of which instance starts first
+        self.ghost_topics = [self.get_peer_topic(peer, bus) for bus in self.buses_at_cut
+                             for peer, buses in self.peers.items() if bus in buses]
+        topics_to_create += self.ghost_topics
         print("topics_to_create",topics_to_create)
-        print("topics", topics)
+        print("ghost_topics", self.ghost_topics)
         if topics_to_create:
             self.producer.create_topics(topics_to_create)
-        if topics:
-            self.wait_for_topic(self.consumer, topics[0])
-            self.consumer.subscribe(topics)
+        if self.ghost_topics:
+            self.consumer.subscribe(self.ghost_topics)
         self.buses = {}
         for bus in self.network.bus.iterrows():
             self.buses[self.network.bus.name[bus[0]]] = bus[0]
-
-    def wait_for_topic(self, consumer, topic, timeout=10):
-        start = time.time()
-        while time.time() - start < timeout:
-            meta = consumer.list_topics()
-            print(meta.keys(), topic, topic in meta.keys(), flush=True)
-            if topic in meta.keys():
-                return True
-            time.sleep(0.5)
-        return False
 
     def on_translator_msg(self, inMsg):
         """Wird von processMsg im Wrapper aufgerufen"""
@@ -290,15 +287,6 @@ class pandapowerAPI(object):
                 pp.runpp(self.network)
             except Exception as e:
                 print(f"Powerflow failed at step {step}: {e}")
-
-    ##################
-    ### process the last simulation step. mainly check if vehicles are going to be sent out
-    def get_ghost_topics(self, ghost):
-        print("____get_ghost_topics____", flush=True)
-        topics = []
-        for topic in self.other_instance_topics:
-            topics.append((topic + "." + ghost).replace(' ', '_'))
-        return topics
 
     def interface_sgen_name(self, bus):
         """Name of the sgen create_interface puts at a copy bus (bus = bus index)"""
@@ -396,98 +384,69 @@ class pandapowerAPI(object):
             })
 
     def postStep(self, step, timeInMS=0):
+        """
+        Couples the copy buses with the other power flow instances (peers): applies their latest
+        boundary values, repeats the power flow and publishes the result as long as something
+        changes. A side without changes stays silent, the exchange ends when nothing new arrives.
+        """
         print("___postStep___", flush=True)
-        msg= None
-        # msg = self.consumer.poll(10)
-        if self.buses_at_cut:
-            do_step = True
-        else:    
-            do_step = False
-        msgs = []
-        change = False
-        while (do_step):
-            topics = []
-            print("next_step", flush=True)
-            do_step = False
-            got_message = False
-            while msg:
-                msgs.append(msg)
-                # msg = self.consumer.poll(1)
-            print("msgs", msgs, flush=True)
-            if msgs:
-                got_message = True
-                change = False
-                for copy_bus in self.buses_at_cut:
-                    if self.three_phase:
-                        voltage_ist_ghost = self.network.res_bus_3ph.vm_a_pu[self.buses[copy_bus]]
-                    else:
-                        voltage_ist_ghost = self.network.res_bus.vm_pu[self.buses[copy_bus]]
-                    msg_overlap = None
-                    overlap_p = 0
-                    overlap_q = 0
-                    overlap_v_mag_pu = 0
-                    for msg in msgs:
-                        if msg.value()['name'] == copy_bus:
-                            topic = msg.topic()
-                            if topic not in topics:
-                                topics.append(topic)
-                                msg_overlap = msg
-                                overlap_p = overlap_p + float(msg_overlap.value()['p'])
-                                overlap_q = overlap_q + float(msg_overlap.value()['q'])
-                                if msg_overlap.value()['control'] == "PQ" or msg_overlap.value()['control'] == "PV":
-                                    overlap_v_mag_pu = float(msg_overlap.value()['v_mag_pu'])
-
-                    if msg_overlap:
-                        # overlap_v_ang = float(msg_overlap.value()['v_ang'])
-                        # overlap_v_mag_pu = float(msg_overlap.value()['v_mag_pu'])
-                        if overlap_v_mag_pu == 0:
-                            overlap_v_mag_pu = float(msg_overlap.value()['v_mag_pu'])
-                        v_diff = voltage_ist_ghost - overlap_v_mag_pu
-                        p, q, ex = self.get_interface_pq(self.buses[copy_bus])
-                        print("p", p, "q", q, "voltage_ist_ghost", voltage_ist_ghost, flush=True)
-                        p_diff = abs(float(p)) - abs(overlap_p)
-                        q_diff = abs(float(q) - abs(overlap_q))
-                        print("diffs", v_diff, p_diff, q_diff)
-
-                        if abs(v_diff) > 1e-8 or abs(p_diff) > 1e-8 or abs(q_diff) > 1e-8:
-                            self.set_values_pp(ex, self.buses[copy_bus], overlap_v_mag_pu, float(msg.value()['v_ang']),
-                                               overlap_p, overlap_q)
-                            print("_after_set_values________")
-                            change = True
-                        else:
-                            do_step = False
-                # print("self.network.generators.p_set",self.network.generators.p_set, flush=True)
-                print("do_step", do_step, change)
-            send_msgs = False
-            if (do_step or change) and got_message:
-                # self.timeSync.timeAdvance(0)
+        if not self.ghost_topics:
+            return
+        now = self.timeSync.currentLocalTime
+        # every peer publishes its copy buses once per step (processStep), later only on changes
+        msgs = collectPeerMsgs(self.consumer, now, timeout=30, expected=self.ghost_topics)
+        for iteration in range(COUPLING_MAX_ITERATIONS):
+            print("coupling iteration", iteration, "received", [m.topic() for m in msgs], flush=True)
+            if not msgs:
+                return
+            if self.apply_peer_values(msgs):
+                self.timeSync.timeAdvance(0)
                 self.step(step)
-                print("DOING STEP", flush=True)
                 self.processStep(step)
-                # self.postStep(step)
-                do_step = True
-                send_msgs = True
-            msgs = []
-            # msg = self.consumer.poll(5)
-            if msg:
-                msgs.append(msg)
-                do_step = True
-                if not send_msgs:
-                    # self.timeSync.timeAdvance(0)
-                    self.step(step)
-                    print("send_msgs", flush=True)
-                    self.processStep(step)
-                print("DOING STEP", flush=True)
+            msgs = collectPeerMsgs(self.consumer, now, timeout=5)
+        print("copy buses did not converge after", COUPLING_MAX_ITERATIONS, "iterations", flush=True)
+
+    def apply_peer_values(self, msgs):
+        """
+        Sets the boundary values the peers sent for the copy buses, returns True if any changed.
+        A copy bus with an ext_grid takes the voltage of the peer, otherwise the interface sgen
+        takes the power: what the peers inject into their part leaves this one.
+        """
+        changed = False
+        for copy_bus in self.buses_at_cut:
+            values = [m.value() for m in msgs if m.value()['name'] == copy_bus]
+            if not values:
+                continue
+            bus = self.buses[copy_bus]
+            ext = list(pp.toolbox.get_connected_elements(self.network, "ext_grid", bus))
+            if ext:
+                # the voltage comes from a peer that computes it, not from another slack
+                v = next((x for x in values if x['control'] != "Slack"), values[-1])
+                new = (float(v['v_mag_pu']), float(v['v_ang']))
+                old = (self.network.ext_grid.at[ext[0], "vm_pu"], self.network.ext_grid.at[ext[0], "va_degree"])
             else:
-                do_step = False
+                new = (-sum(float(x['p']) for x in values), -sum(float(x['q']) for x in values))
+                old = self.get_interface_setpoint(bus)
+            print("copy bus", copy_bus, "slack" if ext else "pq", "old", old, "new", new, flush=True)
+            if any(abs(a - b) > COUPLING_TOL for a, b in zip(old, new)):
+                v_mag, v_ang = new if ext else (0, 0)
+                p, q = (0, 0) if ext else new
+                self.set_values_pp(bool(ext), bus, v_mag, v_ang, p, q)
+                changed = True
+        return changed
 
-            # msg = self.consumer.poll(5)
-            # print('the new msg', msg, flush=True)
-
-        if (timeInMS > 100000 and timeInMS % 1000 == 0):
-            print(f"Post-processing for step {timeInMS}")
-
-        return
+    def get_interface_setpoint(self, bus):
+        """p [MW] / q [MVAr] set at the interface sgen of a copy bus (bus = bus index)"""
+        name = self.interface_sgen_name(bus)
+        for elem in pp.toolbox.get_connected_elements(self.network, "sgen", bus):
+            if self.network.sgen.at[elem, "name"] == name:
+                return self.network.sgen.at[elem, "p_mw"], self.network.sgen.at[elem, "q_mvar"]
+        for elem in pp.toolbox.get_connected_elements(self.network, "asymmetric_sgen", bus):
+            if self.network.asymmetric_sgen.at[elem, "name"] == name:
+                sg = self.network.asymmetric_sgen
+                return (sum(sg.at[elem, f"p_{ph}_mw"] for ph in "abc"),
+                        sum(sg.at[elem, f"q_{ph}_mvar"] for ph in "abc"))
+        return 0.0, 0.0
 
     def get_interface_pq(self, bus):
         """
@@ -554,8 +513,11 @@ class pandapowerAPI(object):
 
     def get_topic(self, string):
         print("____get_topic____", flush=True)
-        return ("provision.simulation." + self.scenarioID + ".energy.Bus." + self.instanceID + '.' + string).replace(" ",
-                                                                                                                 "_")
+        return self.get_peer_topic(self.instanceID, string)
+
+    def get_peer_topic(self, instanceID, bus):
+        """Topic on which instanceID publishes its values at a copy bus"""
+        return ("provision.simulation." + self.scenarioID + ".energy.Bus." + instanceID + '.' + bus).replace(" ", "_")
 
     def extract_network(self, responsibility):
         print("____extract_network____", flush=True)

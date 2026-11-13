@@ -35,6 +35,7 @@ class pandapowerWrapper():
         self.statusTopic = 'orchestration.simulation.' + scenarioID + '.status'
         self.restopic = ['provision.simulation.' + scenarioID + '.resource']
         self.other_instance_topics = []
+        self.peers = {}
 
         self.kid = scenarioID + "." + instanceID
         self.scenarioID = scenarioID
@@ -89,6 +90,11 @@ class pandapowerWrapper():
         for sim in self.sce['buildingBlocks']:
             if sim['instanceID'] != self.instanceID:
                 self.other_instance_topics.append(self.topicPre +"Bus."+ sim['instanceID'])
+                # buses the other instance couples at, see postStep in the api
+                buses = {b.strip() for b in (sim.get('parameters') or {}).get('copy_buses', '').split(',') if b.strip()}
+                buses.update(b for b in sim.get('responsibilities') or [] if b != '*')
+                if buses:
+                    self.peers[sim['instanceID']] = buses
                 continue
             self.sim = sim
             for resID, resType in sim["resources"].items():
@@ -234,7 +240,7 @@ class pandapowerWrapper():
             n_steps = max(1, sim_end // step_size)
             self.bbConsumer = KafkaConsumer(broker, registry, self.scetopic, self.kid + ".sce")
             save_scenario(self.scenarioID, self.sce)
-            self.api = pandapowerAPI(network_file, self.timeSync, self.bbConsumer, self.producer, self.scenarioID, self.other_instance_topics,self.instanceID, step_size, n_steps, to_observe=self.buses_to_observe(), parameters=self.parameters)
+            self.api = pandapowerAPI(network_file, self.timeSync, self.bbConsumer, self.producer, self.scenarioID, self.other_instance_topics,self.instanceID, step_size, n_steps, to_observe=self.buses_to_observe(), parameters=self.parameters, peers=self.peers)
 
             self.api.init(self.responsibility)
             self.startMainConsumer()

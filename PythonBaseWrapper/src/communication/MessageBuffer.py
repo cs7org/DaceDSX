@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import threading
+import time
 from struct import unpack
 
 
@@ -18,6 +19,30 @@ def getMsgSender(msg):
         if key == "sender":
             return value.decode() if isinstance(value, bytes) else str(value)
     return ""
+
+
+def collectPeerMsgs(consumer, now, timeout, quiet=1.0, expected=()):
+    """
+    Latest message per topic among those sent at simulation time `now` or later; older ones are
+    left over from an earlier step and dropped. Waits up to `timeout` s for a message on every
+    topic in `expected` (for any first message if empty), then takes what else arrives until
+    nothing came for `quiet` s.
+    """
+    latest = {}
+    deadline = time.monotonic() + timeout
+    while True:
+        waiting = not latest or any(t not in latest for t in expected)
+        wait = deadline - time.monotonic() if waiting else quiet
+        if wait <= 0:
+            break
+        msg = consumer.poll(wait)
+        if msg is None:
+            if waiting:
+                continue
+            break
+        if getMsgTime(msg) >= now:
+            latest[msg.topic()] = msg
+    return list(latest.values())
 
 
 class MessageBuffer():

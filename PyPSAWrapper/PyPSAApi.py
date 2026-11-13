@@ -36,7 +36,9 @@ import pypsa
 import numpy as np
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + '/../PythonBaseWrapper/src/communication')
+sys.path.append(os.path.dirname(os.path.abspath(__file__)) + '/../PythonBaseWrapper/src/logic')
 from MessageBuffer import collectPeerMsgs
+from ResultDir import result_dir
 
 # boundary values at the copy buses count as unchanged below this difference (pu, MW, MVAr)
 COUPLING_TOL = 1e-6
@@ -80,6 +82,9 @@ class PyPSAAPI(object):
         self.peers = peers or {}
         # topics of the peers at the copy buses, set in init
         self.ghost_topics = []
+        # power flow results per step, written by write_results
+        self.bus_rows = []
+        self.line_rows = []
 
     def init(self, responsibility):
         self.network = pypsa.Network()
@@ -134,6 +139,36 @@ class PyPSAAPI(object):
             value = self.get_bus(bus, self.snapshots[step])
             msg = self.producer.produce(topic, value, timestamp=self.timeSync.currentLocalTime)
             print("msg", msg)
+        self.log_results(step)
+
+    def log_results(self, step):
+        """Stores the power flow result of the current time in the same form as pandapower; a repeated
+        power flow in the same step (see postStep) replaces the rows of the earlier one."""
+        t = self.timeSync.currentLocalTime
+        snapshot = self.snapshots[step]
+        n = self.network
+        self.bus_rows = [r for r in self.bus_rows if r["time"] != t]
+        self.line_rows = [r for r in self.line_rows if r["time"] != t]
+        for bus in n.buses.index:
+            self.bus_rows.append({
+                "time": t,
+                "bus": bus,
+                "name": bus,
+                "v_mag": n.buses_t.v_mag_pu.at[snapshot, bus],
+                "v_ang": np.degrees(n.buses_t.v_ang.at[snapshot, bus]),
+                # PyPSA counts injections positive, pandapower's res_bus consumption
+                "p": -n.buses_t.p.at[snapshot, bus],
+                "q": -n.buses_t.q.at[snapshot, bus]
+            })
+        for line in n.lines.index:
+            self.line_rows.append({
+                "time": t,
+                "line": line,
+                "name": line,
+                "p0": n.lines_t.p0.at[snapshot, line],
+                # reactive power at bus0, named q1 like in the pandapower results
+                "q1": n.lines_t.q0.at[snapshot, line]
+            })
 
     def postStep(self, step, timeInMS=0):
         """
@@ -360,35 +395,13 @@ class PyPSAAPI(object):
         print("todo: destroy()")
 
     def write_results(self, output_path=None):
-        bus_rows = []
-        line_rows = []
-
-        for snapshot in self.network.snapshots:
-            for bus_id in self.network.buses.index:
-                bus_rows.append({
-                    "snapshot": snapshot,
-                    "bus": bus_id,
-                    "v_mag": self.network.buses_t.v_mag_pu.at[snapshot, bus_id],
-                    "v_ang": self.network.buses_t.v_ang.at[snapshot, bus_id],
-                })
-            for line_id in self.network.lines.index:
-                line_rows.append({
-                    "snapshot": snapshot,
-                    "line": line_id,
-                    "p0": self.network.lines_t.p0.at[snapshot, line_id],
-                    "q0": self.network.lines_t.q0.at[snapshot, line_id],
-                    "p1": self.network.lines_t.p1.at[snapshot, line_id],
-                    "q1": self.network.lines_t.q1.at[snapshot, line_id],
-                })
-
         if output_path is None:
-            output_path = (Path(__file__).resolve().parents[1] / "_data" / "results" /
-                           f"powerflow_results_{self.scenarioID}_{self.instanceID}.xlsx")
+            output_path = result_dir(self.scenarioID, self.instanceID) / "results.xlsx"
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
-            pd.DataFrame(bus_rows, columns=["snapshot", "bus", "v_mag", "v_ang"]).to_excel(
+            pd.DataFrame(self.bus_rows, columns=["time", "bus", "name", "v_mag", "v_ang", "p", "q"]).to_excel(
                 writer, sheet_name="Bus", index=False)
-            pd.DataFrame(line_rows, columns=["snapshot", "line", "p0", "q0", "p1", "q1"]).to_excel(
+            pd.DataFrame(self.line_rows, columns=["time", "line", "name", "p0", "q1"]).to_excel(
                 writer, sheet_name="Line", index=False)
         return output_path

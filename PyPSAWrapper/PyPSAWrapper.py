@@ -32,6 +32,7 @@ this_directory=os.path.dirname(os.path.abspath(__file__))
 sys.path.append(this_directory+'/../PythonBaseWrapper/src/logic')
 sys.path.append(this_directory+'/../PythonBaseWrapper/src/communication')
 from TimeSync import TimeSync
+from ResultDir import save_scenario
 from KafkaConsumer import KafkaConsumer
 from KafkaProducer import KafkaProducer
 from PyPSAApi import PyPSAAPI
@@ -258,6 +259,7 @@ class PyPSAWrapper():
             end = self.sce['simulationEnd']
 
             self.bbConsumer = KafkaConsumer(broker, registry, self.scetopic, self.kid + ".sce")
+            save_scenario(self.scenarioID, self.sce)
             self.api = PyPSAAPI(network_file, self.timeSync, self.bbConsumer, self.producer, self.scenarioID, self.other_instance_topics,self.instanceID, stepLengthS, self.sce['simulationEnd']/self.sim['stepLength'], to_observe=self.buses_to_observe(), parameters=self.parameters, peers=self.peers)
             self.startMainConsumer()
 
@@ -299,7 +301,6 @@ class PyPSAWrapper():
                     print(e)
                 iteration = iteration + 1
             self.klog("finished")
-            self.api.write_results()
 
         except Exception as e:
             print("main loop catched exception - vvvvvvvv")
@@ -308,6 +309,7 @@ class PyPSAWrapper():
 
         finally:
             if self.api is not None:
+                self.api.write_results()
                 self.api.destroy()
             if self.consumer is not None:
                 self.consumer.stop()

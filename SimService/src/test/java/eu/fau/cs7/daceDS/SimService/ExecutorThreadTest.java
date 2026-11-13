@@ -60,7 +60,7 @@ public class ExecutorThreadTest {
 
 		assertFalse("process blocked on unread output", t.isAlive());
 		assertEquals(0, t.getExitVal());
-		File log = new File(logDir, "sce_sim0.run.log");
+		File log = new File(logDir, "sce/sim0.run.log");
 		assertTrue(log.length() >= 200000);
 		assertTrue(Files.readString(log.toPath()).endsWith("oops\n"));
 	}

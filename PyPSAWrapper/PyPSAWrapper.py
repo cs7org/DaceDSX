@@ -32,6 +32,7 @@ this_directory=os.path.dirname(os.path.abspath(__file__))
 sys.path.append(this_directory+'/../PythonBaseWrapper/src/logic')
 sys.path.append(this_directory+'/../PythonBaseWrapper/src/communication')
 from TimeSync import TimeSync
+from ResultDir import save_scenario
 from KafkaConsumer import KafkaConsumer
 from KafkaProducer import KafkaProducer
 from PyPSAApi import PyPSAAPI
@@ -42,7 +43,7 @@ print("HERE", config["general"])
 broker = config["general"]["kafkaBroker"]
 registry = config["general"]["schemaRegistry"]
 baseDir = "/daceDS/CarlaWrapper/tmp/"
-energySchemaPath = this_directory+"/../AvroSchemas/bus.avsc"
+energySchemaPath = this_directory+"/../AvroSchemas/Bus.avsc"
 
 import json
 
@@ -58,6 +59,7 @@ class PyPSAWrapper():
         self.statusTopic = 'orchestration.simulation.' + scenarioID + '.status'
         self.restopic = ['provision.simulation.' + scenarioID + '.resource']
         self.other_instance_topics = []
+        self.peers = {}
 
         self.kid = scenarioID + "." + instanceID
         self.scenarioID = scenarioID
@@ -113,7 +115,12 @@ class PyPSAWrapper():
         ##get resources
         for sim in self.sce['buildingBlocks']:
             if sim['instanceID'] != self.instanceID:
-                self.other_instance_topics.append(self.topicPre+sim['instanceID'])
+                self.other_instance_topics.append(self.topicPre+"Bus."+sim['instanceID'])
+                # buses the other instance couples at, see postStep in the api
+                buses = {b.strip() for b in (sim.get('parameters') or {}).get('copy_buses', '').split(',') if b.strip()}
+                buses.update(b for b in sim.get('responsibilities') or [] if b != '*')
+                if buses:
+                    self.peers[sim['instanceID']] = buses
                 continue
             self.sim = sim
             for resID, resType in sim["resources"].items():
@@ -252,7 +259,8 @@ class PyPSAWrapper():
             end = self.sce['simulationEnd']
 
             self.bbConsumer = KafkaConsumer(broker, registry, self.scetopic, self.kid + ".sce")
-            self.api = PyPSAAPI(network_file, self.timeSync, self.bbConsumer, self.producer, self.scenarioID, self.other_instance_topics,self.instanceID, stepLengthS, self.sce['simulationEnd']/self.sim['stepLength'], to_observe=self.buses_to_observe(), parameters=self.parameters)
+            save_scenario(self.scenarioID, self.sce)
+            self.api = PyPSAAPI(network_file, self.timeSync, self.bbConsumer, self.producer, self.scenarioID, self.other_instance_topics,self.instanceID, stepLengthS, self.sce['simulationEnd']/self.sim['stepLength'], to_observe=self.buses_to_observe(), parameters=self.parameters, peers=self.peers)
             self.startMainConsumer()
 
             self.api.init(self.responsibility)
@@ -293,7 +301,6 @@ class PyPSAWrapper():
                     print(e)
                 iteration = iteration + 1
             self.klog("finished")
-            self.api.write_results()
 
         except Exception as e:
             print("main loop catched exception - vvvvvvvv")
@@ -302,6 +309,7 @@ class PyPSAWrapper():
 
         finally:
             if self.api is not None:
+                self.api.write_results()
                 self.api.destroy()
             if self.consumer is not None:
                 self.consumer.stop()

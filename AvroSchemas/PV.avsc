@@ -1,0 +1,8 @@
+{
+   "namespace": "eu.fau.cs7.daceDS.datamodel",
+   "type": "record",
+   "name": "PV",
+   "fields": [
+      {"name": "power_ac", "type": "float"}
+   ]
+}

@@ -15,6 +15,7 @@ from confluent_kafka import KafkaError
 from AvroProducerConsumer import AvroConsumerStrKey
 from confluent_kafka import Consumer
 import threading
+import traceback
 import math
 
 
@@ -31,20 +32,21 @@ class KafkaConsumer():
         self.cb = cb
         self.avro = avro
 
+        # regex subscriptions only see topics created later after a metadata refresh (default 5 min)
         if (self.avro):
             self.consumerConf = {'bootstrap.servers': broker, 'schema.registry.url': registry, 'group.id': consumerID,
                                  'client.id': consumerID, 'auto.offset.reset': "earliest",
-                                 'max.poll.interval.ms': 3000000}
+                                 'max.poll.interval.ms': 3000000, 'topic.metadata.refresh.interval.ms': 1000}
             if requestTimeout is not None:
                 self.consumerConf['schema.registry.request.timeout'] = requestTimeout
-            if strict:
-                self.consumerConf['topic.metadata.refresh.interval.ms'] = 1000
             self.consumer = AvroConsumerStrKey(self.consumerConf)
         else:
             self.consumerConf = {'bootstrap.servers': broker, 'group.id': consumerID, 'client.id': consumerID,
-                                 'auto.offset.reset': "earliest", 'max.poll.interval.ms': 3000000}
+                                 'auto.offset.reset': "earliest", 'max.poll.interval.ms': 3000000,
+                                 'topic.metadata.refresh.interval.ms': 1000}
             self.consumer = Consumer(self.consumerConf)
         self.running = True
+        self.lastOffsets = {}
 
         self._subscribe(topics)
         self.th = None
@@ -64,19 +66,18 @@ class KafkaConsumer():
                                           sign.isalnum() is False and sign != "-"})
 
     def run(self):
-        self._subscribe(self.topics)
+        # short poll timeout so that stop() can join this thread quickly
         while (self.running):
-            try:
-                inMsg = self.consumer.poll(10)
-                if inMsg != None and not (inMsg.error()):
-                    if (self.cb):
-                        self.cb(inMsg)
-                    else:
-                        pass
-                        # print("> > > received msg! topic =", inMsg.topic(), ", time =", inMsg.timestamp()[1],", key =", inMsg.key(), ", value =", inMsg.value(), flush=True)
-
-            except SerializerError as e:
-                print("Message deserialization failed for {}: {}".format(inMsg, e), flush=True)
+            inMsg = self.poll(1)
+            if inMsg is not None and self.cb:
+                # an exception in the callback must not kill the listener thread, otherwise
+                # TimeSync waits forever for messages that are never counted
+                try:
+                    self.cb(inMsg)
+                except Exception:
+                    print("callback failed for message on", inMsg.topic(), flush=True)
+                    traceback.print_exc()
+        self.consumer.close()
 
     def listenInBG(self):
         self.th = threading.Thread(target=self.run)
@@ -112,28 +113,39 @@ class KafkaConsumer():
             if msg is None:
                 return None
             if (msg.error()):
-
-                print("got an error, restarting consumers")
-
-                self.consumer.close()
-                if (self.avro):
-                    self.consumer = AvroConsumerStrKey(self.consumerConf)
-                else:
-                    self.consumer = Consumer(self.consumerConf)
-
-                self._subscribe(self.topics)
+                # non-fatal errors (e.g. topic not yet created) are retried by librdkafka itself
+                if not msg.error().fatal():
+                    print("consumer error (ignored):", msg.error(), flush=True)
+                    return None
+                print("got a fatal error, restarting consumers", msg.error(), flush=True)
+                self._restart()
                 return None
+            # after a restart the consumer resumes at the last committed offset, so messages
+            # may be delivered twice -> drop them, otherwise TimeSync counts them twice
+            key = (msg.topic(), msg.partition())
+            if msg.offset() <= self.lastOffsets.get(key, -1):
+                return None
+            self.lastOffsets[key] = msg.offset()
             return msg
-        except:
-            print("got an exception, restarting consumers")
-            self.consumer.close()
-            if (self.avro):
-                self.consumer = AvroConsumerStrKey(self.consumerConf)
-            else:
-                self.consumer = Consumer(self.consumerConf)
-
-            self._subscribe(self.topics)
+        except SerializerError as e:
+            # the broken message is already consumed, restarting would only deliver it again
+            print("Message deserialization failed:", e, flush=True)
             return None
+        except Exception as e:
+            print("got an exception, restarting consumers", e, flush=True)
+            self._restart()
+            return None
+
+    def _restart(self):
+        try:
+            self.consumer.close()
+        except Exception:
+            pass
+        if (self.avro):
+            self.consumer = AvroConsumerStrKey(self.consumerConf)
+        else:
+            self.consumer = Consumer(self.consumerConf)
+        self._subscribe(self.topics)
 
     def _subscribe(self, topics):
         self.consumer.subscribe(topics)
@@ -143,16 +155,18 @@ class KafkaConsumer():
 
     def subscribe(self, topics):
         if topics:
+            # remember the subscription, a restart would fall back to the old topics otherwise
             self.topics = topics
-            self.consumer.subscribe(topics)
-            print("subscribed to:")
-            for t in topics:
-                print(t)
+            self._subscribe(topics)
 
     def stop(self):
         self.running = False
-        self.running = False
-        self.consumer.close()
+        if self.th is not None and self.th.is_alive():
+            # the listener thread closes the consumer itself, closing it here while it polls is unsafe
+            if threading.current_thread() is not self.th:
+                self.th.join()
+        else:
+            self.consumer.close()
 
     def list_topics(self):
         return self.consumer.list_topics().topics

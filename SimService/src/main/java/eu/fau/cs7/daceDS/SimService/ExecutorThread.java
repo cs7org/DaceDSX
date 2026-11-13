@@ -44,7 +44,8 @@ public class ExecutorThread extends Thread{
 	
 	ExecutorThread(String basePath, String logDir, String type, String id, Scenario scenario){
 		this.basePath  = basePath;
-		this.logFile  = new File(logDir, scenario.getScenarioID() + "_" + id + ".run.log");
+		//one folder per scenario: <logDir>/<scenarioID>/<instanceID>.run.log
+		this.logFile  = new File(new File(logDir, scenario.getScenarioID().toString()), id + ".run.log");
 		this.scenario  = scenario;
 		this.type = type;
 		this.id = id;

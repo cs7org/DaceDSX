@@ -1,0 +1,190 @@
+<?xml version="1.0"?>
+<rdf:RDF xmlns="http://example.org/energy#"
+     xml:base="http://example.org/energy"
+     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+     xmlns:owl="http://www.w3.org/2002/07/owl#"
+     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
+
+    <owl:Ontology rdf:about="http://example.org/energy"/>
+
+    <!-- ===== Classes ===== -->
+    <owl:Class rdf:about="#Battery"/>
+    <owl:Class rdf:about="#ElectricalEnergy"/>
+    <owl:Class rdf:about="#Charging"/>
+    <owl:Class rdf:about="#EnergyTransformation"/>
+    <owl:Class rdf:about="#PhotovoltaicEnergyTransformation">
+        <rdfs:subClassOf rdf:resource="#EnergyTransformation"/>
+    </owl:Class>
+    <owl:Class rdf:about="#PhotovoltaicCell"/>
+    <owl:Class rdf:about="#Generator"/>
+    <owl:Class rdf:about="#Power"/>
+    <owl:Class rdf:about="#ActivePower">
+        <rdfs:subClassOf rdf:resource="#Power"/>
+    </owl:Class>
+    <owl:Class rdf:about="#ReactivePower">
+        <rdfs:subClassOf rdf:resource="#Power"/>
+    </owl:Class>
+    <owl:Class rdf:about="#ApparentPower">
+        <rdfs:subClassOf rdf:resource="#Power"/>
+    </owl:Class>
+    <owl:Class rdf:about="#Voltage"/>
+    <owl:Class rdf:about="#Current"/>
+    <owl:Class rdf:about="#PhaseAngle"/>
+    <owl:Class rdf:about="#Time"/>
+    <owl:Class rdf:about="#Capacity"/>
+    <owl:Class rdf:about="#StateOfCharge"/>
+
+    <!-- Class hierarchy -->
+    <owl:Class rdf:about="#PhotovoltaicCell">
+        <rdfs:subClassOf rdf:resource="#Generator"/>
+    </owl:Class>
+
+    <!-- ===== Object Properties ===== -->
+    <owl:ObjectProperty rdf:about="#hasEnergyInput"/>
+    <owl:ObjectProperty rdf:about="#hasEnergyOutput"/>
+    <owl:ObjectProperty rdf:about="#hasParticipant"/>
+    <owl:ObjectProperty rdf:about="#participatesIn"/>
+    <owl:ObjectProperty rdf:about="#hasAttribute"/>
+    <owl:ObjectProperty rdf:about="#hasComponent"/>
+    <owl:ObjectProperty rdf:about="#dependsOn"/>
+
+    <!-- ===== Relations ===== -->
+
+    <!-- Battery -->
+    <owl:Class rdf:about="#Battery">
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="#hasEnergyInput"/>
+                <owl:someValuesFrom rdf:resource="#ElectricalEnergy"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="#hasEnergyOutput"/>
+                <owl:someValuesFrom rdf:resource="#ElectricalEnergy"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+    </owl:Class>
+
+    <!-- Charging -->
+    <owl:Class rdf:about="#Charging">
+        <rdfs:subClassOf rdf:resource="#EnergyTransformation"/>
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="#hasParticipant"/>
+                <owl:someValuesFrom rdf:resource="#Battery"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+    </owl:Class>
+
+    <!-- Photovoltaic transformation -->
+    <owl:Class rdf:about="#PhotovoltaicEnergyTransformation">
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="#hasParticipant"/>
+                <owl:someValuesFrom rdf:resource="#PhotovoltaicCell"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+    </owl:Class>
+
+    <!-- Generator -->
+    <owl:Class rdf:about="#Generator">
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="#hasEnergyOutput"/>
+                <owl:someValuesFrom rdf:resource="#ElectricalEnergy"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+    </owl:Class>
+
+    <!-- PV Cell -->
+    <owl:Class rdf:about="#PhotovoltaicCell">
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="#hasEnergyOutput"/>
+                <owl:someValuesFrom rdf:resource="#ElectricalEnergy"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+    </owl:Class>
+
+    <!-- EnergyTransformation -->
+    <owl:Class rdf:about="#EnergyTransformation">
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="#hasAttribute"/>
+                <owl:someValuesFrom rdf:resource="#Power"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+    </owl:Class>
+
+    <!-- Power structure -->
+    <owl:Class rdf:about="#ApparentPower">
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="#hasComponent"/>
+                <owl:someValuesFrom rdf:resource="#ActivePower"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="#hasComponent"/>
+                <owl:someValuesFrom rdf:resource="#ReactivePower"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+    </owl:Class>
+
+    <!-- Dependencies -->
+    <owl:Class rdf:about="#ActivePower">
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="#dependsOn"/>
+                <owl:someValuesFrom rdf:resource="#Voltage"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+    </owl:Class>
+
+    <owl:Class rdf:about="#ReactivePower">
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="#dependsOn"/>
+                <owl:someValuesFrom rdf:resource="#Voltage"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+    </owl:Class>
+
+    <owl:Class rdf:about="#ApparentPower">
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="#dependsOn"/>
+                <owl:someValuesFrom rdf:resource="#Voltage"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+    </owl:Class>
+
+    <!-- Electrical energy -->
+    <owl:Class rdf:about="#ElectricalEnergy">
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="#dependsOn"/>
+                <owl:someValuesFrom rdf:resource="#Power"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+    </owl:Class>
+
+    <!-- Battery attributes -->
+    <owl:Class rdf:about="#Battery">
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="#hasAttribute"/>
+                <owl:someValuesFrom rdf:resource="#Capacity"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="#hasAttribute"/>
+                <owl:someValuesFrom rdf:resource="#StateOfCharge"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+    </owl:Class>
+
+</rdf:RDF>

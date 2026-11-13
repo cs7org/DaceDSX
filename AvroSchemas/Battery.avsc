@@ -1,7 +1,7 @@
 {
    "namespace": "eu.fau.cs7.daceDS.datamodel",
    "type": "record",
-   "name": "PV",
+   "name": "Battery",
    "fields": [
       {"name": "power", "type": "float"},
       {"name": "current", "type": "float"},

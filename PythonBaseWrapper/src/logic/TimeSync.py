@@ -67,6 +67,7 @@ class TimeSync():
         self.timeoutHandler = timeoutHandler
         
         self.receiveCountErrors = {}
+        self.lastObservedReceiveCount = {}
         
         self.inferedTopics = []
         
@@ -163,6 +164,8 @@ class TimeSync():
                     self.receiveCountErrors[topic]=1
                 else:
                     self.receiveCountErrors[topic] = self.receiveCountErrors[topic]+1
+
+                self.lastObservedReceiveCount[topic] = 0
                     
                 if ((self.timeoutHandler is not None) and (self.receiveCountErrors[topic] % self.max_error_count == 0)):
                     print("error count is",self.receiveCountErrors[topic],", calling timeouthandler", flush=True)
@@ -174,7 +177,25 @@ class TimeSync():
             if self.actualReceivedMsgCount[topic] < number:
                 if(self.logging == True):
                     print("msgCount OK? NO!",self.actualReceivedMsgCount, '/', self.expectedReceiveCount, flush=True)
+
+                if (self.lastObservedReceiveCount.get(topic) is not None and self.actualReceivedMsgCount[topic] != self.lastObservedReceiveCount[topic]):
+                    self.receiveCountErrors[topic] = 0
+                else:
+                    if topic not in self.receiveCountErrors:
+                        self.receiveCountErrors[topic] = 1
+                    else:
+                        self.receiveCountErrors[topic] = self.receiveCountErrors.get(topic,0)+1
+
+                self.lastObservedReceiveCount[topic] = self.actualReceivedMsgCount[topic]
+
+                if ((self.timeoutHandler is not None) and (self.receiveCountErrors[topic] > 0) and (self.receiveCountErrors[topic] % self.max_error_count == 0)):
+                    print("error count is",self.receiveCountErrors[topic],", calling timeouthandler", flush=True)
+                    self.timeoutHandler()
+                    print("timeouthandler returned", flush=True)
                 return False
+
+            self.receiveCountErrors.pop(topic, None)
+            self.lastObservedReceiveCount.pop(topic, None)
         
         if(self.logging == True):
             print("msgCount OK? YES!",self.actualReceivedMsgCount, '/', self.expectedReceiveCount, flush=True)

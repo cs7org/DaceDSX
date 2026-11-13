@@ -44,6 +44,73 @@ class ProcessSyncMsgTest(unittest.TestCase):
         self.assertEqual(timeSync.expectedReceiveCount, {'data.a': 1, 'data.b': 2})
         self.assertEqual(timeSync.lbts, 10)
 
+class MsgCountOKTest(unittest.TestCase):
+
+    def setUp(self):
+        self.ts = TimeSync('broker', 'registry', 'sync', 'me', logging=False)
+        self.ts.max_error_count = 2
+        self.ts.timeoutHandler = MagicMock()
+        self.ts.processSyncMsg(syncMsg('peer', 'join'))
+
+    def announce(self, topic='grid.power', count=3):
+        self.ts.addExpectedTopic(topic)
+        self.ts.processSyncMsg(syncMsg('peer', 'request', time=10, messages={topic: count}))
+
+    def test_missing_messages_triggers_timeout_handler(self):
+        ts = self.ts
+        ts.addExpectedTopic('grid.voltage')
+        self.announce()
+        self.assertEqual(ts.expectedReceiveCount, {'grid.voltage': 0, 'grid.power': 3})
+        self.assertNotIn('grid.power', ts.actualReceivedMsgCount)
+        self.assertFalse(ts.msgCountOK())
+        self.assertEqual(ts.receiveCountErrors['grid.power'], 1)
+        ts.timeoutHandler.assert_not_called()
+        self.assertFalse(ts.msgCountOK())
+        self.assertEqual(ts.receiveCountErrors['grid.power'], 2)
+        ts.timeoutHandler.assert_called_once_with()
+        self.assertNotIn('grid.voltage', ts.receiveCountErrors)
+
+    def test_partial_delivery_triggers_timeout_handler(self):
+        ts = self.ts
+        self.announce()
+        ts.notifiyAboutReceivedMessage('grid.power', count=2)
+        self.assertEqual(ts.actualReceivedMsgCount['grid.power'], 2)
+        self.assertFalse(ts.msgCountOK())
+        self.assertEqual(ts.receiveCountErrors['grid.power'], 1)
+        ts.timeoutHandler.assert_not_called()
+        self.assertFalse(ts.msgCountOK())
+        self.assertEqual(ts.receiveCountErrors['grid.power'], 2)
+        ts.timeoutHandler.assert_called_once_with()
+
+    def test_progress_resets_counter_and_stall_triggers_timeout(self):
+        ts = self.ts
+        self.announce(count=4)
+        self.assertFalse(ts.msgCountOK())
+        self.assertEqual(ts.receiveCountErrors['grid.power'], 1)
+        ts.notifiyAboutReceivedMessage('grid.power')
+        self.assertFalse(ts.msgCountOK())
+        self.assertEqual(ts.receiveCountErrors['grid.power'], 0)
+        ts.notifiyAboutReceivedMessage('grid.power')
+        self.assertFalse(ts.msgCountOK())
+        self.assertEqual(ts.receiveCountErrors['grid.power'], 0)
+        ts.timeoutHandler.assert_not_called()
+        self.assertFalse(ts.msgCountOK())
+        self.assertEqual(ts.receiveCountErrors['grid.power'], 1)
+        ts.timeoutHandler.assert_not_called()
+        self.assertFalse(ts.msgCountOK())
+        self.assertEqual(ts.receiveCountErrors['grid.power'], 2)
+        ts.timeoutHandler.assert_called_once_with()
+
+    def test_complete_delivery_clears_error_state(self):
+        ts = self.ts
+        self.announce()
+        self.assertFalse(ts.msgCountOK())
+        self.assertEqual(ts.receiveCountErrors['grid.power'], 1)
+        ts.notifiyAboutReceivedMessage('grid.power', count=3)
+        self.assertTrue(ts.msgCountOK())
+        self.assertEqual(ts.receiveCountErrors.get('grid.power', 0), 0)
+        ts.timeoutHandler.assert_not_called()
+
 
 if __name__ == '__main__':
     unittest.main()

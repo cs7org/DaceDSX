@@ -17,7 +17,7 @@ import avro.schema
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "OpenDSSWrapper"))
-from OpenDSSApi import OpenDSSAPI
+from OpenDSSApi import OpenDSSAPI, dss
 from OpenDSSWrapper import OpenDSSWrapper, Resources, main
 from KafkaProducer import KafkaProducer
 from TimeSync import TimeSync
@@ -284,6 +284,9 @@ class LifecycleTests(unittest.TestCase):
         self.scenario["buildingBlocks"][0]["parameters"] = {"load_profiles":json.dumps([
             {"element":"Load.Load1", "points":[{"time_ms":0,"kw":900,"kvar":300}]}])}
         self.submit()
+        # ctx_New sporadically segfaults off the main thread, so create both engines here.
+        engines = [dss.NewContext() for _ in range(2)]
+        patch("OpenDSSApi.dss", Mock(NewContext=Mock(side_effect=engines))).start()
         errors = []
         def run(instance):
             try: self.wrapper(instance).execute()

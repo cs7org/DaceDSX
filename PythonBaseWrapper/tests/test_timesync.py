@@ -111,6 +111,27 @@ class MsgCountOKTest(unittest.TestCase):
         self.assertEqual(ts.receiveCountErrors.get('grid.power', 0), 0)
         ts.timeoutHandler.assert_not_called()
 
+    def test_multiple_topics_require_complete_delivery(self):
+        ts = self.ts
+        self.announce(topic='grid.power', count=2)
+        self.announce(topic='grid.voltage', count=3)
+        self.assertEqual(ts.expectedReceiveCount, {'grid.power': 2, 'grid.voltage': 3})
+        ts.notifiyAboutReceivedMessage('grid.power', count=2)
+        ts.notifiyAboutReceivedMessage('grid.voltage', count=1)
+        self.assertFalse(ts.msgCountOK())
+        ts.notifiyAboutReceivedMessage('grid.voltage', count=2)
+        self.assertTrue(ts.msgCountOK())
+
+    def test_multiple_participants_accumulate_expected_messages(self):
+        ts = self.ts
+        self.announce(topic='grid.power', count=2)
+        ts.processSyncMsg(syncMsg('peer2', 'join'))
+        ts.processSyncMsg(syncMsg('peer2', 'request', time=10, messages={'grid.power': 3}))
+        self.assertEqual(ts.expectedReceiveCount['grid.power'], 5)
+        ts.notifiyAboutReceivedMessage('grid.power', count=2)
+        self.assertFalse(ts.msgCountOK())
+        ts.notifiyAboutReceivedMessage('grid.power', count=3)
+        self.assertTrue(ts.msgCountOK())
 
 if __name__ == '__main__':
     unittest.main()

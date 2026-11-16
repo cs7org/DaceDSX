@@ -1,0 +1,25 @@
+Battery:
+  Description: A Bus is a electricity grid component.
+  NearestOntologyConcept: https://openenergyplatform.org/ontology/oeo/OEO_00000144
+  Attributes:
+    voltage:
+      Description: The voltage magnitude per unit is the voltage at a bus expressed relative to a chosen reference voltage.
+      NearestOntologyConcept: Voltage
+      Unit: V
+      Type: float
+    current:
+      Description: The voltage angle at a bus is the phase difference between the bus voltage and a chosen reference voltage, usually expressed in degrees or radians.
+      NearestOntologyConcept: Current
+      Unit: A
+      Type: float
+    power:
+      Description: The active power is the product of the voltage across a branch of an alternating-current circuit and the component of the electric current that is in phase with the voltage.
+      NearestOntologyConcept: Power
+      Unit: W
+      Type: float
+    soc:
+      Description: The reactive power is the portion of electricity that establishes and sustains the electric and magnetic fields of alternating-current equipment.
+      NearestOntologyConcept: StateOfCharge
+      Unit: None
+      Type: float
+

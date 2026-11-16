@@ -161,7 +161,7 @@ class ResourceTests(unittest.TestCase):
         literal = re.search(r'new org\.apache\.avro\.Schema\.Parser\(\)\.parse\(("(?:\\.|[^"\\])*")\)', source).group(1)
         schema = avro.schema.parse(json.loads(literal))
         self.assertTrue(avro.io.validate(schema, SCENARIO, raise_on_error=True))
-        bus_schema = avro.schema.parse((ROOT / "AvroSchemas/bus.avsc").read_text())
+        bus_schema = avro.schema.parse((ROOT / "AvroSchemas/Bus.avsc").read_text())
         self.assertTrue(avro.io.validate(bus_schema, {key:"0" for key in
             ("name","p","q","v_mag_pu","v_ang","control")}, raise_on_error=True))
 

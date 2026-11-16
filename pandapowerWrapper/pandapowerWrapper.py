@@ -9,6 +9,7 @@ this_directory=os.path.dirname(os.path.abspath(__file__))
 sys.path.append(this_directory+'/../PythonBaseWrapper/src/logic')
 sys.path.append(this_directory+'/../PythonBaseWrapper/src/communication')
 from TimeSync import TimeSync
+from ResultDir import save_scenario
 from KafkaConsumer import KafkaConsumer
 from KafkaProducer import KafkaProducer
 from pandapowerApi import pandapowerAPI
@@ -18,7 +19,7 @@ config.read('config.properties')
 broker = config["general"]["kafkaBroker"]
 registry = config["general"]["schemaRegistry"]
 baseDir = "/daceDS/CarlaWrapper/tmp/"
-energySchemaPath = this_directory+"/../AvroSchemas/bus.avsc"
+energySchemaPath = this_directory+"/../AvroSchemas/Bus.avsc"
 
 import json
 
@@ -27,13 +28,14 @@ import json
 
 class pandapowerWrapper():
     def __init__(self, scenarioID, instanceID):
-        self.regexTopic = ["^provision\.simulation\." + scenarioID + "\.energy\.network"]
+        self.regexTopic = ["^provision\.simulation\." + scenarioID + "\.energy\.Bus"]
         self.topicPre = "provision.simulation." + scenarioID + ".energy."
         self.timeTopic = "orchestration.simulation." + scenarioID + ".sync"
         self.scetopic = ['provision.simulation.' + scenarioID + '.scenario']
         self.statusTopic = 'orchestration.simulation.' + scenarioID + '.status'
         self.restopic = ['provision.simulation.' + scenarioID + '.resource']
         self.other_instance_topics = []
+        self.peers = {}
 
         self.kid = scenarioID + "." + instanceID
         self.scenarioID = scenarioID
@@ -53,6 +55,7 @@ class pandapowerWrapper():
         self.sim = None
 
         self.demoMode = False
+        self.api = None
 
     def klog(self, msg):
         print("klog:", self.statusTopic, self.instanceID + ": " + msg)
@@ -82,10 +85,16 @@ class pandapowerWrapper():
         consumer.stop()
 
     def get_resources(self):
+
         ##get resources
         for sim in self.sce['buildingBlocks']:
             if sim['instanceID'] != self.instanceID:
-                self.other_instance_topics.append(self.topicPre + sim['instanceID'])
+                self.other_instance_topics.append(self.topicPre +"Bus."+ sim['instanceID'])
+                # buses the other instance couples at, see postStep in the api
+                buses = {b.strip() for b in (sim.get('parameters') or {}).get('copy_buses', '').split(',') if b.strip()}
+                buses.update(b for b in sim.get('responsibilities') or [] if b != '*')
+                if buses:
+                    self.peers[sim['instanceID']] = buses
                 continue
             self.sim = sim
             for resID, resType in sim["resources"].items():
@@ -94,6 +103,11 @@ class pandapowerWrapper():
             self.responsibility = sim['responsibilities']
             self.observers = sim['observers']
             self.parameters = sim['parameters']
+        if self.sce["translators"]:
+            print("We have translators")
+            # translator topics are received by the main consumer (regex ...energy.Bus) and
+            # buffered in the api, a second consumer would count every message twice
+            self.other_instance_topics.append(self.topicPre + "Bus.translator.")
 
         print("fetching network", self.network, flush=True)
         self.resConsumer = KafkaConsumer(broker, registry, self.restopic, self.kid + ".res")
@@ -152,11 +166,13 @@ class pandapowerWrapper():
             self.timeSync.addExpectedPattern(p)
 
         self.timeSync.joinTiming()
-        self.producer.create_topics([self.topicPre+"network"])
+        self.producer.create_topics([self.topicPre+"bus"])
 
     def handleTimeout(self):
-        print("handleTimeout", flush=True)
-        self.startMainConsumer()
+        # restarting the consumer would re-deliver uncommitted messages, the consumer
+        # picks up new topics by itself (metadata refresh), so only report what is missing
+        print("handleTimeout: still waiting for", self.timeSync.expectedReceiveCount,
+              "received", self.timeSync.actualReceivedMsgCount, flush=True)
 
     def startMainConsumer(self):
         if (self.consumer is not None):
@@ -175,23 +191,27 @@ class pandapowerWrapper():
         self.consumer.listenInBG()
 
     def processMsg(self, inMsg):
-        print("\n in processMsg\n")
+        # print("\n in processMsg\n")
         if inMsg != None:
-            print("== > > > received in ", inMsg.topic(), ", time =", inMsg.timestamp()[1], inMsg.value(), flush=True)
+            # print("== > > > received in ", inMsg.topic(), ", time =", inMsg.timestamp()[1], inMsg.value(), flush=True)
             # notify timesync about received msg
             timestamp = inMsg.timestamp()[1]  # 0 should be TIMESTAMP_CREATE_TIME
             topicBody = inMsg.topic()[len(self.topicPre):]
+            topic = inMsg.topic()
             subject, tmp = topicBody.split(".", 1)
-            print("Subject: ", subject, flush=True)
-            if subject == "network":
-                line, load = tmp.split(".", 1)
+            # print("Subject: ", subject, flush=True)
+            if subject == "Bus":
+                bus = tmp.split(".", 1)[0]
                 # special chars
                 # edge = edge.replace("---2e", ".")
-                realtopic = self.topicPre + subject + "." + line + "." + load
-                print(inMsg.topic(), "->", realtopic)
-                self.timeSync.notifiyAboutReceivedMessage(realtopic)
+                realtopic = self.topicPre + subject + "." + bus
+                # print(inMsg.topic(), "->", realtopic)
+                # buffer before counting: once TimeSync sees the count, the data must be there
+                if ".translator." in topic and self.api is not None:
+                    self.api.on_translator_msg(inMsg)  # ← weiterleiten
+                self.timeSync.notifiyAboutReceivedMessage(topic)
             else:
-                self.timeSync.notifiyAboutReceivedMessage(subject)
+                self.timeSync.notifiyAboutReceivedMessage(topic)
                 print(subject, "not supported jet")
                 return
 
@@ -211,7 +231,6 @@ class pandapowerWrapper():
             self.klog("simulating")
 
             ### create api bridge and run  ######
-            self.api = None
             stepLengthMs = self.sim['stepLength']
             # mapFile = baseDir + self.roadMapFile
             network_file = self.network.split("///")[1]
@@ -220,10 +239,11 @@ class pandapowerWrapper():
             # print("sim_end", sim_end, "step_size", step_size, "sim_end // step_size", sim_end // step_size)
             n_steps = max(1, sim_end // step_size)
             self.bbConsumer = KafkaConsumer(broker, registry, self.scetopic, self.kid + ".sce")
-            self.api = pandapowerAPI(network_file, self.timeSync, self.bbConsumer, self.producer, self.scenarioID, self.other_instance_topics,self.instanceID, step_size, n_steps, to_observe=self.buses_to_observe(), parameters=self.parameters)
-            self.startMainConsumer()
+            save_scenario(self.scenarioID, self.sce)
+            self.api = pandapowerAPI(network_file, self.timeSync, self.bbConsumer, self.producer, self.scenarioID, self.other_instance_topics,self.instanceID, step_size, n_steps, to_observe=self.buses_to_observe(), parameters=self.parameters, peers=self.peers)
 
             self.api.init(self.responsibility)
+            self.startMainConsumer()
 
             iteration = 0
             while self.timeSync.currentLocalTime < sim_end:
@@ -231,6 +251,7 @@ class pandapowerWrapper():
                 # 1. ask to proceed
                 sssl = stepLengthMs
                 self.timeSync.timeAdvance(sssl)
+
 
                 try:
                     self.api.prepareStep(iteration)
@@ -260,6 +281,7 @@ class pandapowerWrapper():
                     print("postStep catched exception ")
                     print(e)
                 iteration = iteration + 1
+
             self.klog("finished")
 
         except Exception as e:
@@ -268,8 +290,8 @@ class pandapowerWrapper():
             print("main loop catched exception - ^^^^^^^")
 
         finally:
-            self.api.write_results()
             if self.api is not None:
+                self.api.write_results()
                 self.api.destroy()
             if self.consumer is not None:
                 self.consumer.stop()
@@ -279,7 +301,7 @@ def main():
     if len(sys.argv) > 2:
         scenarioID, instanceID = sys.argv[1], sys.argv[2]
     else:
-        print("Usage: python pandapowerWrapper.py <scenarioID> <instanceID>")
+        print("Usage: python pandapowerWrapper_old.py <scenarioID> <instanceID>")
         sys.exit(1)
 
     try:

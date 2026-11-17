@@ -1,6 +1,6 @@
 # DaceDSX
 
-This repository is a new version of DaceDS from Moritz Gütlein. 
+This repository is a new version of [DaceDS](https://github.com/guetlein/daceDS) from Moritz Gütlein. 
 DaceDS is a data-centric Distributed Simulation framework that focuses on data and loose couplings between components. 
 It enables to combine various black-boxes in a plug-and-play manner. 
 The connection of simulators, the integrating of data sources, the provision of data & interaction interfaces for external components, as well as the orchestration of simulation runs is covered. 
@@ -130,9 +130,7 @@ the Kafka orchestration instructions above.
 You are welcome to contribute to DaceDSX via bug reports and feature requests at any time.
 
 ## License
-This project is primarily licensed under the MIT License. However, files in the `CppBaseWrapper/src/datamodel/` directory and the file `PythonWrapper/src/communication/AvroProducerConsumer.py` remain under the Apache License 2.0.
-You can find further information on the MIT License in the [LICENSE](./LICENSE)-file or on this [website](https://choosealicense.com/licenses/mit/).
-For mor information on the Apache License 2.0 take a look at the [LICENSE-APACHE](./CppBaseWrapper/src/datamodel/LICENSE-APACHE)-file or on this [website](https://www.apache.org/licenses/LICENSE-2.0).
+This project is primarily licensed under the MIT License. Exceptions and further informations are listed in LICENSE.
 
 ## Publications
 

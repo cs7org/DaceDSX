@@ -112,7 +112,7 @@ Further we provide information on the licensing and publications.
 2. **Install PyPSA**: Follow the [installation guide](https://pypsa-eur.readthedocs.io/en/latest/installation.html).
 3. **Install Required Python Packages**:
    ```bash
-   pip install confluent-kafka avro tables
+   pip install confluent-kafka[avro] avro tables
    ```
 4. Create a scenario file and place it in `_data/scenarios`.
 5. Follow the general instructions in the **"What to do to run a Scenario in DaceDSX"** section.

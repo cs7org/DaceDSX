@@ -28,6 +28,10 @@ from pathlib import Path
 import pandas as pd
 import pandapower as pp
 import json
+import configparser
+
+config = configparser.ConfigParser()
+config.read('config.properties')
 
 pd.options.mode.chained_assignment = None
 
@@ -529,10 +533,21 @@ class pandapowerAPI(object):
                 "q1": q0
             })
 
-            df_bus = pd.DataFrame(bus_rows)
-            df_line = pd.DataFrame(line_rows)
+        df_bus = pd.DataFrame(bus_rows)
+        df_line = pd.DataFrame(line_rows)
 
-            with pd.ExcelWriter(f"../_data/results/powerflow_results_{self.scenarioID}_{self.instanceID}.xlsx",
+        exportFileType = config['general']['dataframeExportFiletype']
+        exportDirectory = config['general']['resultsDirectory']
+
+        filename = f"powerflow_results_{self.scenarioID}_{self.instanceID}"
+
+        if exportFileType == "xlsx":
+            with pd.ExcelWriter(Path(exportDirectory) / f"{filename}.xlsx",
                                 engine="openpyxl") as writer:
                 df_bus.to_excel(writer, sheet_name="Bus", index=False)
                 df_line.to_excel(writer, sheet_name="Line", index=False)
+        elif exportFileType == "csv":
+                df_bus.to_csv(Path(exportDirectory) / f"{filename}_bus.csv", index=False)
+                df_line.to_csv(Path(exportDirectory) / f"{filename}_line.csv", index=False)
+        else:
+            raise ValueError("Invalid dataframeExportFiletype")

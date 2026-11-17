@@ -1,19 +1,28 @@
 # DaceDSX
 
-This repository is a new version of [DaceDS](https://github.com/guetlein/daceDS) from Moritz Gütlein. 
-DaceDS is a data-centric Distributed Simulation framework that focuses on data and loose couplings between components. 
+DaceDSX is a data-centric Distributed Simulation framework that focuses on data and loose couplings between components, with a focus on energy research. 
 It enables to combine various black-boxes in a plug-and-play manner. 
 The connection of simulators, the integrating of data sources, the provision of data & interaction interfaces for external components, as well as the orchestration of simulation runs is covered. 
 All communication is realized via a topic-based publish/subscribe paradigm on top of Apache Kafka.
 
-In this repository we will further develop DaceDSX to improve its initial state and to match the needs of the energy research community.
+This repository based of [DaceDS](https://github.com/guetlein/daceDS) from Moritz Gütlein. In this repository we will further develop DaceDSX to improve its initial state and to match the needs of the energy research community.
 In the future we will add more wrappers for simulators and new features. 
 The planned extensions can be found in this [publication](https://doi.org/10.5281/zenodo.15064826).
 In the following you will find a guide on how to install and run DaceDSX with the implemented wrappers.
-Further we provide a contribution guide and information on the licensing and publications.
+Further we provide information on the licensing and publications.
 
-# Installation guide
-## What to install
+## Table of Contents
+- [Installation Guide](#installation-guide)
+  - [Prerequesites](#prerequesites)
+  - [Compiling DaceDSX](#compiling-dacedsx)
+  - [Running a scenario in DaceDSX](#running-a-scenario-in-dacedsx)
+  - [Compile SumoWrapper](#compile-sumowrapper)
+  - [Run PyPSA scenarios](#running-pypsa-scenarios)
+- [License](#license)
+- [Publications](#publications)
+
+## Installation Guide
+### Prerequesites
 
 * The simulation service is implemented for Linux operating systems, it is highly recommended to use Linux Ubuntu distribution (22.04). If you want to use it on Windows, please install [WSL](https://learn.microsoft.com/de-de/windows/wsl/install) and run all the commands in the WSL (open the cmd and write bash to activate WSL)
 * [JDK 11](https://jdk.java.net/archive/). 
@@ -31,14 +40,14 @@ Further we provide a contribution guide and information on the licensing and pub
   * wsl --update
 
 
-## How to compile DaceDSX
+## Compiling DaceDSX
 1. Download or check-out this repo
 2. Compile the JavaBaseWrapper and SimService (just run “mvn install” in that folder, where pom.xml resides)
 3. If any error occured with Build, please run “mvn install -Dhttps.protocols=TLSv1.2” (based on JDK 11 version)
 4. Compile (if necessary) the Wrapper-folder, e.g. as shown below for SumoWrapper
 
 
-## What to do to run a Scenario in DaceDSX:
+## Running a scenario in DaceDSX:
 1.	Make sure a config.properties is next to the SimService-0.1-jar-with-dependencies.jar and SendScenarioObject.jar
 * `mv ./config.properties ./target/config.properties`
 * adapt the paths in the config.properties file
@@ -50,7 +59,7 @@ Further we provide a contribution guide and information on the licensing and pub
 4.	Run the SendScenarioObject with your scenario file as input
 * (sudo) java -jar ./path_to/SimService/target/SendScenarioObject.jar ./path_to_scenario/scenario_file.json
 
-## What to do to compile the SumoWrapper:
+## Compile SumoWrapper
 1.	Install sumo (make sure to check out a release-tag from the sumo-git-repo)
 * https://sumo.dlr.de/docs/Installing/
 * https://sumo.dlr.de/docs/Installing/Linux_Build.html
@@ -95,7 +104,7 @@ Further we provide a contribution guide and information on the licensing and pub
 5. Install gnome-terminal: `sudo apt install gnome-terminal`
 6. Make sure the paths in `_data\executables\SumoWrapper\run.sh` are correct before running a scenario
 
-## What to do to run a PyPSA-scenario:
+## Running PyPSA scenarios
 
 1. **Install Python**: [Download Python](https://www.python.org/downloads/) and set it up.
 2. **Install PyPSA**: Follow the [installation guide](https://pypsa-eur.readthedocs.io/en/latest/installation.html).
@@ -124,10 +133,6 @@ The example covers 0 to 2 milliseconds with a 1 millisecond step.
 The local runner supports a single uncoupled network; coupled scenarios use
 the Kafka orchestration instructions above.
 
-
-# Further information
-## How to Contribute
-You are welcome to contribute to DaceDSX via bug reports and feature requests at any time.
 
 ## License
 This project is primarily licensed under the MIT License. Exceptions and further informations are listed in LICENSE.

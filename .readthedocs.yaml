@@ -10,4 +10,4 @@
      build:
        html:
          # - mdbook init docs
-         - mdbook build docs --dest-dir $READTHEDOCS_OUTPUT/html
+         - $HOME/.cargo/bin/mdbook build docs --dest-dir $READTHEDOCS_OUTPUT/html

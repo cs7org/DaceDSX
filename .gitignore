@@ -16,3 +16,4 @@ _data/runtime/
 .venv/
 .pytest_cache/
 PR*.md
+docs/book

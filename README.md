@@ -1,5 +1,6 @@
 # DaceDSX
 
+ [![Docs](https://img.shields.io/badge/Documentation-555555)](https://dacedsx.readthedocs.io/)
  [![License: MIT](https://img.shields.io/badge/License-MIT%20%28with%20exceptions%29-yellow.svg)](https://opensource.org/licenses/MIT)
 
 DaceDSX is a data-centric Distributed Simulation framework that focuses on data and loose couplings between components, with a focus on energy research. 
@@ -10,131 +11,9 @@ All communication is realized via a topic-based publish/subscribe paradigm on to
 This repository based of [DaceDS](https://github.com/guetlein/daceDS) from Moritz Gütlein. In this repository we will further develop DaceDSX to improve its initial state and to match the needs of the energy research community.
 In the future we will add more wrappers for simulators and new features. 
 The planned extensions can be found in this [publication](https://doi.org/10.5281/zenodo.15064826).
-In the following you will find a guide on how to install and run DaceDSX with the implemented wrappers.
-Further we provide information on the licensing and publications.
 
-## Table of Contents
-- [Installation Guide](#installation-guide)
-  - [Prerequesites](#prerequesites)
-  - [Compiling DaceDSX](#compiling-dacedsx)
-  - [Running a scenario in DaceDSX](#running-a-scenario-in-dacedsx)
-  - [Compile SumoWrapper](#compile-sumowrapper)
-  - [Run PyPSA scenarios](#running-pypsa-scenarios)
-- [License](#license)
-- [Publications](#publications)
-
-## Installation Guide
-### Prerequesites
-
-* The simulation service is implemented for Linux operating systems, it is highly recommended to use Linux Ubuntu distribution (22.04). If you want to use it on Windows, please install [WSL](https://learn.microsoft.com/de-de/windows/wsl/install) and run all the commands in the WSL (open the cmd and write bash to activate WSL)
-* [JDK 11](https://jdk.java.net/archive/). 
-  * set JAVA_Home
-  * add %JAVA_HOME%\bin to your Path
-* Install [Maven](https://maven.apache.org/download.cgi) and add it to your Path
-* For Windows Users: Install [WSL](https://learn.microsoft.com/de-de/windows/wsl/install)
-* Install [Docker Desktop](https://docs.docker.com/engine/install/)
-  * For Windows: Go to settings -> General and enable "Use the WSL 2 based engine"
-  * For Linux: Go to settings -> General and enable "enable 'docker-compose' CLI alias" 
-* Do step 1 of the [Setup Confluent Platform](https://docs.confluent.io/platform/current/platform-quickstart.html#qs-prereq)  using the [Zookeeper-compose file](https://github.com/confluentinc/cp-all-in-one/blob/7.5.2-post/cp-all-in-one/docker-compose.yml) instead of the wget command (if an error occurs during compose up -d check if the indentation of the yaml-file is correct)
-* Navigate to Control Center at http://localhost:9021. It may take a minute or two for Control Center to start and load. Click the controlcenter.cluster tile.
-* For Windows Users: If an error occurs during the installation of docker or confluent try:
-  * dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
-  * wsl --update
-
-
-## Compiling DaceDSX
-1. Download or check-out this repo
-2. Compile the JavaBaseWrapper and SimService (just run “mvn install” in that folder, where pom.xml resides)
-3. If any error occured with Build, please run “mvn install -Dhttps.protocols=TLSv1.2” (based on JDK 11 version)
-4. Compile (if necessary) the Wrapper-folder, e.g. as shown below for SumoWrapper
-
-
-## Running a scenario in DaceDSX:
-1.	Make sure a config.properties is next to the SimService-0.1-jar-with-dependencies.jar and SendScenarioObject.jar
-* `mv ./config.properties ./target/config.properties`
-* adapt the paths in the config.properties file
-2.	Open Docker and run Kafka:
- * docker-compose up -d
- * docker-compose ps
-3.	Run the SimService:
-* (sudo) java -jar ./path_to/SimService/target/SimService-0.1-jar-with-dependencies.jar
-4.	Run the SendScenarioObject with your scenario file as input
-* (sudo) java -jar ./path_to/SimService/target/SendScenarioObject.jar ./path_to_scenario/scenario_file.json
-
-## Compile SumoWrapper
-1.	Install sumo (make sure to check out a release-tag from the sumo-git-repo)
-* https://sumo.dlr.de/docs/Installing/
-* https://sumo.dlr.de/docs/Installing/Linux_Build.html
-* export CMAKE_PREFIX_PATH=path_to_sumo_build/sumo/build:$CMAKE_PREFIX_PATH
-* Create an empty config.h file and add it to the build folder in sumo
-* Install **SUMOLibraries** in the parent directory (`/../sumo`) using this [guide](https://github.com/DLR-TS/SUMOLibraries).
-2.	Install missing libraries (Preferably in DaceDSX folder)
-  - [Avro](https://github.com/apache/avro): Follow the [instructions](https://github.com/apache/avro/blob/main/lang/c++/README) for both `avro/lang/c++` and `avro/lang/c`.
-  - [Libserdes](https://github.com/confluentinc/libserdes)
-  - [Librdkafka](https://github.com/confluentinc/librdkafka)
-  - [CppKafka](https://github.com/mfontanini/cppkafka)
-  - [PugiXML](https://github.com/zeux/pugixml)
-
-3. **Build Libraries**:
-   - For **CppKafka** and **PugiXML**:
-     ```bash
-     mkdir build
-     cd build
-     cmake ..
-     make -j5
-     sudo make install
-     ```
-   - For **Librdkafka** and **Libserdes**:
-     ```bash
-     ./configure (#modify the `configure` script to use C++17 if build issues occur)
-     make -j5
-     sudo make install
-     ```
- 
-3.	Compile CppBaseWrapper (adapt files in `CMakeLists.txt`)
-
-     ```bash
-     mkdir build
-     cd build
-     cmake ..
-     make -j5
-     ```
-  
-4.	Compile SumoWrapper
-* Adjust `Makefile`
-* Run `make`
-5. Install gnome-terminal: `sudo apt install gnome-terminal`
-6. Make sure the paths in `_data\executables\SumoWrapper\run.sh` are correct before running a scenario
-
-## Running PyPSA scenarios
-
-1. **Install Python**: [Download Python](https://www.python.org/downloads/) and set it up.
-2. **Install PyPSA**: Follow the [installation guide](https://pypsa-eur.readthedocs.io/en/latest/installation.html).
-3. **Install Required Python Packages**:
-   ```bash
-   pip install confluent-kafka[avro] avro tables
-   ```
-4. Create a scenario file and place it in `_data/scenarios`.
-5. Follow the general instructions in the **"What to do to run a Scenario in DaceDSX"** section.
-
-For the uncoupled `minimal_network.json` example, a local runner is also available.
-It reads the scenario and uses `PyPSAAPI` directly, without Kafka or SimService.
-Use Python 3.10 or newer to create the environment (this example was tested
-with Python 3.12). Run these commands from the repository root on Windows:
-
-```powershell
-python -m venv .venv-pypsa
-.\.venv-pypsa\Scripts\python.exe -m pip install -r PyPSAWrapper\requirements-local.txt
-.\.venv-pypsa\Scripts\python.exe PyPSAWrapper\run_local.py _data\scenarios\minimal_network.json
-```
-
-Results are saved in `_data/results/minimal_network/`: `powerflow_results.xlsx`
-contains bus voltages and line flows for both snapshots; CSV files and
-`summary.json` include numerical results and convergence diagnostics.
-The example covers 0 to 2 milliseconds with a 1 millisecond step.
-The local runner supports a single uncoupled network; coupled scenarios use
-the Kafka orchestration instructions above.
-
+## Quickstart  Guide
+Refer to the [**docs**](https://dacedsx.readthedocs.io/01-quickstart.html).
 
 ## License
 This project is primarily licensed under the MIT License. Exceptions and further informations are listed in LICENSE.

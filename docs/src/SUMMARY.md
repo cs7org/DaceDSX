@@ -1,5 +1,11 @@
+# Intro
+
 [Introduction](README.md)
 
-- [My First Chapter](my-first-chapter.md)
-- [Nested example](nested/README.md)
-    - [Sub-chapter](nested/sub-chapter.md)
+- [Quickstart](01-quickstart.md)
+- [Guides](02-guides/README.md)
+    - [Compiling SumoWrapper](02-guides/compiling-sumo.md)
+    - [Running PyPSA scenarios](02-guides/pypsa.md)
+
+[License](license.md)
+[Publications](publications.md)

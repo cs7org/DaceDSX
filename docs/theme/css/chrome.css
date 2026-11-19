@@ -56,6 +56,21 @@ html.sidebar-visible #mdbook-menu-bar {
 #mdbook-menu-bar.bordered {
     border-block-end-color: var(--table-border-color);
 }
+
+/* Unofficial documentation warning banner */
+.unofficial-doc-warning {
+    margin: 0 calc(0px - var(--page-padding));
+    padding: 8px var(--page-padding);
+    background-color: var(--quote-bg);
+    border-block-end: 2px solid var(--warning-border);
+    color: var(--fg);
+    text-align: center;
+    font-size: 1.4rem;
+}
+.unofficial-doc-warning a {
+    color: var(--links);
+    font-weight: bold;
+}
 #mdbook-menu-bar .fa-svg, #mdbook-menu-bar .icon-button {
     position: relative;
     padding: 0 8px;

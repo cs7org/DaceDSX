@@ -2,6 +2,7 @@
 
  [![Docs](https://img.shields.io/badge/Documentation-555555)](https://dacedsx.readthedocs.io/)
  [![License: MIT](https://img.shields.io/badge/License-MIT%20%28with%20exceptions%29-yellow.svg)](https://opensource.org/licenses/MIT)
+ [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15064826.svg)](https://doi.org/10.5281/zenodo.15064826)
 
 DaceDSX is a data-centric Distributed Simulation framework that focuses on data and loose couplings between components, with a focus on energy research. 
 It enables to combine various black-boxes in a plug-and-play manner. 

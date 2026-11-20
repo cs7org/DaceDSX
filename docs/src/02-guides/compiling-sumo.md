@@ -1,6 +1,5 @@
 # Compiling SumoWrapper
 
-## Compile SumoWrapper
 1.	Install sumo (make sure to check out a release-tag from the sumo-git-repo)
 * https://sumo.dlr.de/docs/Installing/
 * https://sumo.dlr.de/docs/Installing/Linux_Build.html

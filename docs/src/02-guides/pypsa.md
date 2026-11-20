@@ -1,9 +1,5 @@
 # Running PyPSA scenarios
 
-
-
-## Running PyPSA scenarios
-
 1. **Install Python**: [Download Python](https://www.python.org/downloads/) and set it up.
 2. **Install PyPSA**: Follow the [installation guide](https://pypsa-eur.readthedocs.io/en/latest/installation.html).
 3. **Install Required Python Packages**:

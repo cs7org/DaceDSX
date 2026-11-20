@@ -6,6 +6,8 @@
 - [Guides]()
     - [Compiling SumoWrapper](02-guides/compiling-sumo.md)
     - [Running PyPSA scenarios](02-guides/pypsa.md)
+- [Contribute]()
+    - [Work on Documentation](03-contribution/mdbooks.md)
 
 [License](license.md)
 [Publications](publications.md)

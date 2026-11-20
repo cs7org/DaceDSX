@@ -140,7 +140,7 @@ file-reference directory.
 
 ## Electrical and timing contract
 
-The existing `AvroSchemas/bus.avsc` represents one scalar voltage per bus:
+The existing `AvroSchemas/Bus.avsc` represents one scalar voltage per bus:
 
 | Field | Meaning |
 | --- | --- |

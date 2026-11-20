@@ -58,6 +58,7 @@ html.sidebar-visible #mdbook-menu-bar {
 }
 
 /* Unofficial documentation warning banner */
+/*
 .unofficial-doc-warning {
     margin: 0 calc(0px - var(--page-padding));
     padding: 8px var(--page-padding);
@@ -71,6 +72,7 @@ html.sidebar-visible #mdbook-menu-bar {
     color: var(--links);
     font-weight: bold;
 }
+*/
 #mdbook-menu-bar .fa-svg, #mdbook-menu-bar .icon-button {
     position: relative;
     padding: 0 8px;

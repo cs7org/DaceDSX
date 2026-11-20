@@ -567,37 +567,6 @@ class pandapowerAPI(object):
         df_bus = pd.DataFrame(self.bus_rows)
         df_line = pd.DataFrame(self.line_rows)
 
-        for values in self.network.bus.iterrows():
-            bus_id = values[0]
-            if self.three_phase:
-                v_mag = self.network.res_bus_3ph.vm_a_pu[values[0]]
-                v_ang = self.network.res_bus_3ph.va_a_degree[values[0]]
-            else:
-                v_mag = self.network.res_bus.vm_pu[values[0]]
-                v_ang = self.network.res_bus.va_degree[values[0]]
-            bus_rows.append({
-                "bus": bus_id,
-                "v_mag": v_mag,
-                "v_ang": v_ang
-            })
-
-        for values in self.network.line.iterrows():
-            if self.three_phase:
-                p0 = self.network.res_line_3ph.p_a_from_mw[values[0]]
-                q0 = self.network.res_line_3ph.q_a_from_mvar[values[0]]
-            else:
-                p0 = self.network.res_line.p_from_mw[values[0]]
-                q0 = self.network.res_line.q_from_mvar[values[0]]
-            line_id = values[0]
-            line_rows.append({
-                "line": line_id,
-                "p0": p0,
-                "q1": q0
-            })
-
-        exportFileType = config['general']['dataframeExportFiletype']
-        exportDirectory = config['general']['resultsDirectory']
-
         filename = f"powerflow_results_{self.scenarioID}_{self.instanceID}"
         result_dir_path = result_dir(self.scenarioID, self.instanceID)
 

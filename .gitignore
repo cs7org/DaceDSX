@@ -17,3 +17,4 @@ _data/runtime/
 .pytest_cache/
 PR*.md
 docs/book
+*.runlog

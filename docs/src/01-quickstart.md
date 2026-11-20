@@ -65,6 +65,7 @@ This guide is intended for **Ubuntu 22.04** (Jammy Jellyfish) or [**WSL 2**](h
 1. **Prepare configuration** - place `config.properties` next to the JARs and move it into the `target` directory:
    ```bash
    # from /SimServer
+   # replaces <repo-dir> with current working path
    sed "s|<repo-dir>|${PWD%/*/*}|g" config.properties
    mv ./config.properties ./target/config.properties
    ```

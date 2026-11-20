@@ -20,3 +20,4 @@ PR*.md
 docs/book
 *.runlog
 *.properties
+*.log

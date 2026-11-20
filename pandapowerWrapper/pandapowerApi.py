@@ -570,6 +570,8 @@ class pandapowerAPI(object):
         filename = f"powerflow_results_{self.scenarioID}_{self.instanceID}"
         result_dir_path = result_dir(self.scenarioID, self.instanceID)
 
+        exportFileType = "xlsx" # TODO for other branch
+
         if exportFileType == "xlsx":
             with pd.ExcelWriter(result_dir_path / f"{filename}.xlsx",
                                 engine="openpyxl") as writer:

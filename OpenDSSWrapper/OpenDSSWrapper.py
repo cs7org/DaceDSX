@@ -170,7 +170,7 @@ class OpenDSSWrapper:
             self.block["observers"], self.output_dir / f"opendss_{self.kid}.csv")
         self.api.init(self.block["responsibilities"])
         self.producer = self.producer_factory(self.broker, self.registry, self.kid,
-            schemaPath=str(ROOT / "AvroSchemas/bus.avsc"), deliveryTimeout=self.timeout)
+            schemaPath=str(ROOT / "AvroSchemas/Bus.avsc"), deliveryTimeout=self.timeout)
         self.sync = self.sync_factory(self.broker, self.registry,
             "orchestration.simulation." + self.scenarioID + ".sync", self.kid + ".time",
             participants, logging=False, waitTimeout=self.timeout, progressHandler=self.receive_inputs)

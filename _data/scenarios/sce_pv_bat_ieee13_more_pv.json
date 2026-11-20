@@ -1,0 +1,141 @@
+{
+ "scenarioID":"pv_bat_ieee13_eot_more_pv_26",
+ "domainReferences": {},
+ "simulationStart": 0,
+ "simulationEnd": 60,
+ "execution": {
+   "randomSeed": 23,
+   "constraints":"",
+   "priority": 0,
+   "syncedParticipants": 7
+  },
+ "buildingBlocks": [
+    {
+     "instanceID":"PW1",
+     "type":"pandapowerWrapper",
+     "layer":"Bus",
+     "domain":"energy",
+     "stepLength": 15,
+     "parameters": {"copy_buses":"Bus 634, Bus 680, Bus 646, Bus 652, Bus 633, Bus 611", "three_phase":"false"},
+     "resources": {
+       "file:///../_data/resources/ieee_13.p":"Network"
+      },
+     "results": {},
+     "synchronized": true,
+     "isExternal": false,
+     "responsibilities": [
+      ],
+     "observers": [
+        {
+         "task":"publish",
+         "element":"bus",
+         "filter":"Grid_115kV",
+         "period": 1,
+         "trigger":"",
+         "type":"avro"
+        }]
+    },
+    {
+     "instanceID":"PV",
+     "type":"pvlibWrapper",
+     "layer":"PV",
+     "domain":"energy",
+     "stepLength": 15,
+     "parameters": {"start_time":"2025-05-01 09:00","end_time":"2025-05-01 10:00","bus":"Bus 680"},
+     "resources": {
+       "file:///../_data/resources/ieee_13.p":"Network"
+      },
+     "results": {},
+     "synchronized": true,
+     "isExternal": false,
+     "responsibilities": [
+      ],
+     "observers": []
+    },
+  {
+     "instanceID":"PV2",
+     "type":"pvlibWrapper",
+     "layer":"PV",
+     "domain":"energy",
+     "stepLength": 15,
+     "parameters": {"start_time":"2025-05-01 09:00","end_time":"2025-05-01 10:00","bus":"Bus 646"},
+     "resources": {
+       "file:///../_data/resources/ieee_13.p":"Network"
+      },
+     "results": {},
+     "synchronized": true,
+     "isExternal": false,
+     "responsibilities": [
+      ],
+     "observers": []
+    },
+  {
+     "instanceID":"PV3",
+     "type":"pvlibWrapper",
+     "layer":"PV",
+     "domain":"energy",
+     "stepLength": 15,
+     "parameters": {"start_time":"2025-05-01 09:00","end_time":"2025-05-01 10:00","bus":"Bus 652"},
+     "resources": {
+       "file:///../_data/resources/ieee_13.p":"Network"
+      },
+     "results": {},
+     "synchronized": true,
+     "isExternal": false,
+     "responsibilities": [
+      ],
+     "observers": []
+    },
+  {
+     "instanceID":"PV4",
+     "type":"pvlibWrapper",
+     "layer":"PV",
+     "domain":"energy",
+     "stepLength": 15,
+     "parameters": {"start_time":"2025-05-01 09:00","end_time":"2025-05-01 10:00","bus":"Bus 633"},
+     "resources": {
+       "file:///../_data/resources/ieee_13.p":"Network"
+      },
+     "results": {},
+     "synchronized": true,
+     "isExternal": false,
+     "responsibilities": [
+      ],
+     "observers": []
+    },
+    {
+     "instanceID":"Battery",
+     "type":"liionpackWrapper",
+     "layer":"Battery",
+     "domain":"energy",
+     "stepLength": 15,
+     "parameters": {"bus":"Bus 634","soc":"0.75", "slack":"Grid_115kV"},
+     "resources": {
+       "file:///../_data/resources/ieee_13.p":"Network"
+      },
+     "results": {},
+     "synchronized": true,
+     "isExternal": false,
+     "responsibilities": [
+      ],
+     "observers": []
+    }
+  ],
+ "translators": [{
+   "translatorID":"translatorID",
+    "type":"energy_ontology_transformer",
+    "domain":"energy",
+    "layerA":"PV, Bus",
+    "responsibilitiesA": ["Bus 680", "Bus 634", "Grid_115kV", "Bus 646", "Bus 652", "Bus 633", "Bus 611"
+    ],
+    "layerB":"Bus, Battery",
+    "responsibilitiesB": [
+    ],
+    "resources": {},
+    "parameters": {}
+    }
+
+    
+  ],
+ "projectors": []
+}

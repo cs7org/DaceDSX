@@ -10,6 +10,7 @@ OpenDSSWrapper/logs/
 _data/runtime/
 /_data/results/*
 /_data/*.log
+/_data/logs/
 !/_data/results/.gitkeep
 .idea/
 .DS_Store

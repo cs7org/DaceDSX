@@ -30,6 +30,15 @@ import pandapower as pp
 import json
 import configparser
 
+# dirty work around
+if __name__ == '__main__':
+    import os
+    import sys
+    this_directory=os.path.dirname(os.path.abspath(__file__))
+    sys.path.append(this_directory+'/../PythonBaseWrapper/src/logic')
+    sys.path.append(this_directory+'/../PythonBaseWrapper/src/communication')
+
+
 config = configparser.ConfigParser()
 config.read('config.properties')
 from MessageBuffer import MessageBuffer, collectPeerMsgs
@@ -585,9 +594,6 @@ class pandapowerAPI(object):
                 "p0": p0,
                 "q1": q0
             })
-
-        df_bus = pd.DataFrame(bus_rows)
-        df_line = pd.DataFrame(line_rows)
 
         exportFileType = config['general']['dataframeExportFiletype']
         exportDirectory = config['general']['resultsDirectory']

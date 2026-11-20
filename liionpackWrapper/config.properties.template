@@ -28,7 +28,7 @@ topicCtrlMsg=ctrl
 #SUMO
 defaultConf=resource/default/default.cfg
 defaultTraffic=resource/default/no.plans.xml
-exe=<repo-dir>/DaceDS4energy_clean/
+exe=<repo-dir>/
 
 outputDirectory=output
 #sumoHost=127.0.0.1

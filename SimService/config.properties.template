@@ -1,8 +1,8 @@
 kafkaBroker=http://localhost:9092
-logDir=<repo-dir>/DaceDS4energy/_data
+logDir=<repo-dir>/_data/logs
 schemaRegistry=http://localhost:8081
-definitionDirectory=<repo-dir>/DaceDS4energy/_data
-rootDir=<repo-dir>/DaceDS4energy/_data/
+definitionDirectory=<repo-dir>/_data
+rootDir=<repo-dir>/_data/
 #TOPIC_NAMES
 channelOrchestration=orchestration.simulation
 channelInteraction=interaction.simulation
@@ -18,5 +18,5 @@ topicCtrlMsg=ctrl
 requestMaxAge=16892371447030
 # wall-clock run time in ms after which a scenario is killed (default: 3600000 = 60 min)
 scenarioMaxAge=3600000
-executablesRoot=<repo-dir>/DaceDS4energy/_data/executables
-resourceDir=<repo-dir>/DaceDS4energy/SimService
+executablesRoot=<repo-dir>/_data/executables
+resourceDir=<repo-dir>/SimService

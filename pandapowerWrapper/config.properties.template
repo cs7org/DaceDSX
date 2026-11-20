@@ -1,6 +1,6 @@
 [general]
 rootDir=<repo-dir>
-logDir=<repo-dir>
+logDir=<repo-dir>/_data/logs/
 simulatorLogFile=PyPSA.log
 simulatorErrorLogFile=matsim_error.log
 # Relative to this configuration file, not the launch directory.

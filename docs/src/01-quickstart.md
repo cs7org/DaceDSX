@@ -64,10 +64,10 @@ This guide is intended for **Ubuntu 22.04** (Jammy Jellyfish) or [**WSL 2**](h
 
 1. **Prepare configuration** - place `config.properties` next to the JARs and move it into the `target` directory:
    ```bash
-   # from /SimServer
-   # replaces <repo-dir> with current working path
-   sed "s|<repo-dir>|${PWD%/*/*}|g" config.properties
-   mv ./config.properties ./target/config.properties
+   # from repository root
+   # replaces all .properties.template in this repo to .properties, replacing <repo-dir> with local absolute path
+   find . -type f -name '*.properties.template' -exec bash -c 'sed "s|<repo-dir>|$1|g" "$2" > "${2%.template}"' _ "$PWD" {} \;
+   mv ./SimService/config.properties ./SimService/target/config.properties
    ```
 2. **Start Kafka via Docker**:
    ```bash
@@ -78,9 +78,9 @@ This guide is intended for **Ubuntu 22.04** (Jammy Jellyfish) or [**WSL 2**](h
 3. **Run the simulation service**:
    ```bash
    # Use sudo only if your Docker/Kafka setup requires it
-   java -jar ./daceDSX/SimService/target/SimService-0.1-jar-with-dependencies.jar
+   java -jar ./SimService/target/SimService-0.1-jar-with-dependencies.jar
    ```
 4. **Send a scenario**:
    ```bash
-   java -jar ./daceDSX/SimService/target/SendScenarioObject.jar ./_data/scenario/minimal_network.json
+   java -jar ./SimService/target/SendScenarioObject.jar ./_data/scenarios/scenario.json
    ```

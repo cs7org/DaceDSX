@@ -309,8 +309,8 @@ class PyPSAWrapper():
                 self.timeSync.leaveTiming()
             # saving results
             # self.api.network.export_to_hdf5(os. getcwd() + "/" + self.instanceID+'_results')
-            # self.api.network.buses_t.v_mag_pu.to_csv("/mnt/c/Users/seiwerth/Desktop/daceds4energy/_pypsa_results" + "/" +self.scenarioID +'_'+self.instanceID+'_results_v_mag_pu.csv', sep=';', index=True)
-            # self.api.network.lines_t.p0.to_csv("/mnt/c/Users/seiwerth/Desktop/daceds4energy/_pypsa_results" + "/" +self.scenarioID +'_'+self.instanceID+'_results_p0.csv', sep=';', index=True)
+            # self.api.network.buses_t.v_mag_pu.to_csv("<repo-dir>/daceds4energy/_pypsa_results" + "/" +self.scenarioID +'_'+self.instanceID+'_results_v_mag_pu.csv', sep=';', index=True)
+            # self.api.network.lines_t.p0.to_csv("<repo-dir>/daceds4energy/_pypsa_results" + "/" +self.scenarioID +'_'+self.instanceID+'_results_p0.csv', sep=';', index=True)
 
 
 def main():

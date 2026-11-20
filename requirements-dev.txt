@@ -1,0 +1,18 @@
+# Python dependencies shared by the DaceDSX Python wrappers (dev image).
+# Pins match OpenDSSWrapper/requirements.txt and the CI setup (Python 3.12).
+confluent-kafka==2.15.1
+avro==1.12.2
+fastavro==1.13.0
+requests==2.34.2
+urllib3==2.8.0
+
+# pandapowerWrapper has no requirements file of its own
+pandas
+pandapower
+
+# tests (see pytest.ini)
+pytest>=8
+
+# Per-wrapper extras, install on demand, e.g.:
+#   pip install -r OpenDSSWrapper/requirements.txt
+#   pip install -r PyPSAWrapper/requirements-local.txt

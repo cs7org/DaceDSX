@@ -1,5 +1,8 @@
 Parts of this repository were originally published under the Apache 2.0 License (http://www.apache.org/licenses/LICENSE-2.0) in 2021.
 In 2025, it has been relicensed under the MIT License (https://choosealicense.com/licenses/mit/) with the explicit permission of all copyright holders.
+Following exlusions are made:
+    - the directory `CppBaseWrapper/src/datamodel/**` and the file `PythonBaseWrapper/src/communication/AvroProducerConsumer.py` remain under the Apache License 2.0.
+    - the directory `_data/erlangen/**`, the directory `_data/erlangen_2/**` and the files `_data/{resources,scenarios}/erlangen.*.xml` are under CC-BY-SA-2.0.
 
 MIT License
 

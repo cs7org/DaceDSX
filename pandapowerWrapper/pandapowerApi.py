@@ -28,6 +28,19 @@ from pathlib import Path
 import pandas as pd
 import pandapower as pp
 import json
+# import configparser
+
+# dirty work around
+if __name__ == '__main__':
+    import os
+    import sys
+    this_directory=os.path.dirname(os.path.abspath(__file__))
+    sys.path.append(this_directory+'/../PythonBaseWrapper/src/logic')
+    sys.path.append(this_directory+'/../PythonBaseWrapper/src/communication')
+
+
+# config = configparser.ConfigParser()
+# config.read('config.properties')
 from MessageBuffer import MessageBuffer, collectPeerMsgs
 from ResultDir import result_dir
 
@@ -554,7 +567,16 @@ class pandapowerAPI(object):
         df_bus = pd.DataFrame(self.bus_rows)
         df_line = pd.DataFrame(self.line_rows)
 
-        with pd.ExcelWriter(result_dir(self.scenarioID, self.instanceID) / "results.xlsx",
-                            engine="openpyxl") as writer:
-            df_bus.to_excel(writer, sheet_name="Bus", index=False)
-            df_line.to_excel(writer, sheet_name="Line", index=False)
+        filename = f"powerflow_results_{self.scenarioID}_{self.instanceID}"
+        result_dir_path = result_dir(self.scenarioID, self.instanceID)
+
+        if exportFileType == "xlsx":
+            with pd.ExcelWriter(result_dir_path / f"{filename}.xlsx",
+                                engine="openpyxl") as writer:
+                df_bus.to_excel(writer, sheet_name="Bus", index=False)
+                df_line.to_excel(writer, sheet_name="Line", index=False)
+        elif exportFileType == "csv":
+                df_bus.to_csv(result_dir_path / f"{filename}_bus.csv", index=False)
+                df_line.to_csv(result_dir_path / f"{filename}_line.csv", index=False)
+        else:
+            raise ValueError("Invalid dataframeExportFiletype")

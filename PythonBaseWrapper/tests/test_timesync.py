@@ -111,6 +111,17 @@ class MsgCountOKTest(unittest.TestCase):
         self.assertEqual(ts.receiveCountErrors.get('grid.power', 0), 0)
         ts.timeoutHandler.assert_not_called()
 
+    def test_stall_in_later_step_triggers_timeout_handler(self):
+        ts = self.ts
+        self.announce()
+        ts.notifiyAboutReceivedMessage('grid.power', count=3)
+        self.assertTrue(ts.msgCountOK())
+        ts.processSyncMsg(syncMsg('peer', 'request', time=20, messages={'grid.power': 2}))
+        self.assertFalse(ts.msgCountOK())
+        ts.timeoutHandler.assert_not_called()
+        self.assertFalse(ts.msgCountOK())
+        ts.timeoutHandler.assert_called_once_with()
+
     def test_multiple_topics_require_complete_delivery(self):
         ts = self.ts
         self.announce(topic='grid.power', count=2)

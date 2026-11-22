@@ -156,37 +156,17 @@ class TimeSync():
         for topic, number in self.expectedReceiveCount.items():
             if number == 0 :                    
                 continue
-            if topic not in self.actualReceivedMsgCount:
-                if(self.logging == True):
-                    print("never received a message on ",topic, "supposed to have", number, flush=True)
-                    
-                if topic not in self.receiveCountErrors:
-                    self.receiveCountErrors[topic]=1
-                else:
-                    self.receiveCountErrors[topic] = self.receiveCountErrors[topic]+1
-
-                self.lastObservedReceiveCount[topic] = 0
-                    
-                if ((self.timeoutHandler is not None) and (self.receiveCountErrors[topic] % self.max_error_count == 0)):
-                    print("error count is",self.receiveCountErrors[topic],", calling timeouthandler", flush=True)
-                    self.timeoutHandler()
-                    print("timeouthandler returned", flush=True)
-                    
-                return False
-            
-            if self.actualReceivedMsgCount[topic] < number:
+            received = self.actualReceivedMsgCount.get(topic, 0)
+            if received < number:
                 if(self.logging == True):
                     print("msgCount OK? NO!",self.actualReceivedMsgCount, '/', self.expectedReceiveCount, flush=True)
 
-                if (self.lastObservedReceiveCount.get(topic) is not None and self.actualReceivedMsgCount[topic] != self.lastObservedReceiveCount[topic]):
+                if received != self.lastObservedReceiveCount.get(topic, received):
                     self.receiveCountErrors[topic] = 0
                 else:
-                    if topic not in self.receiveCountErrors:
-                        self.receiveCountErrors[topic] = 1
-                    else:
-                        self.receiveCountErrors[topic] = self.receiveCountErrors.get(topic,0)+1
+                    self.receiveCountErrors[topic] = self.receiveCountErrors.get(topic, 0) + 1
 
-                self.lastObservedReceiveCount[topic] = self.actualReceivedMsgCount[topic]
+                self.lastObservedReceiveCount[topic] = received
 
                 if ((self.timeoutHandler is not None) and (self.receiveCountErrors[topic] > 0) and (self.receiveCountErrors[topic] % self.max_error_count == 0)):
                     print("error count is",self.receiveCountErrors[topic],", calling timeouthandler", flush=True)

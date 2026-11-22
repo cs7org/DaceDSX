@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import MagicMock
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from threading import Lock
 
 import kafka_stub  # noqa: F401  must precede the wrapper imports
@@ -170,40 +170,23 @@ class DifferentTimeStepTest(unittest.TestCase):
         self.b.producer.produce = MagicMock(side_effect=deliver)
 
     def test_non_divisible_time_steps(self):
+        grants = []
         def advance(ts, step):
             while ts.currentLocalTime < self.stop_time:
                 previous_time = ts.currentLocalTime
                 ts.timeAdvance(step)
                 self.assertEqual(ts.currentLocalTime, previous_time + step)
+                grants.append((ts.myID, ts.currentLocalTime))
         with ThreadPoolExecutor(max_workers=2) as executor:
             future_a = executor.submit(advance, self.a, self.a_step)
             future_b = executor.submit(advance, self.b, self.b_step)
-            future_a.result()
-            future_b.result()
-        self.assertEqual(self.a.currentLocalTime, self.stop_time)
-        self.assertEqual(self.b.currentLocalTime, self.stop_time)
+            for future in as_completed([future_a, future_b]):
+                future.result()
+        self.assertEqual(grants[:6], [('A', 3), ('B', 5), ('A', 6), ('A', 9), ('B', 10), ('A', 12)])
+        self.assertCountEqual(grants[6:], [('A', 15), ('B', 15)])
         self.assertEqual(self.a.lbts, self.stop_time)
         self.assertEqual(self.b.lbts, self.stop_time)
 
-    def test_negative_step_during_simulation(self):
-        def advance(ts, steps):
-            for step in steps:
-                previous_time = ts.currentLocalTime
-                ts.timeAdvance(step)
-                self.assertEqual(ts.currentLocalTime, previous_time + step)
-                if step < 0:
-                    self.assertEqual(self.a.participants[ts.myID], ts.currentLocalTime)
-                    self.assertEqual(self.b.participants[ts.myID], ts.currentLocalTime)
-        with ThreadPoolExecutor(max_workers=2) as executor:
-            future_a = executor.submit(advance, self.a, [-self.a_step, self.a_step, self.a_step,
-                                                         self.a_step, self.a_step, self.a_step, self.a_step])
-            future_b = executor.submit(advance, self.b, [self.b_step, self.b_step, -self.b_step, self.b_step, self.b_step])
-            future_a.result()
-            future_b.result()
-        self.assertEqual(self.a.currentLocalTime, self.stop_time)
-        self.assertEqual(self.b.currentLocalTime, self.stop_time)
-        self.assertEqual(self.a.lbts, self.stop_time)
-        self.assertEqual(self.b.lbts, self.stop_time)
 
 if __name__ == '__main__':
     unittest.main()

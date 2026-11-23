@@ -1,5 +1,7 @@
 import unittest
 from unittest.mock import MagicMock
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from threading import Lock
 
 import kafka_stub  # noqa: F401  must precede the wrapper imports
 from TimeSync import TimeSync
@@ -232,6 +234,58 @@ class SynchronizationBoundTest(unittest.TestCase):
         ts.processSyncMsg(syncMsg('C', 'leave'))
         self.assertEqual(ts.lbts, 10)
         self.assertTrue(ts.timeOK(10))
+
+    def test_lbts_decreases_on_earlier_request(self):
+        ts = TimeSync('broker', 'registry', 'sync', 'me', logging=False)
+        ts.processSyncMsg(syncMsg('A', 'join'))
+        ts.processSyncMsg(syncMsg('B', 'join'))
+        ts.processSyncMsg(syncMsg('A', 'request', time=10))
+        ts.processSyncMsg(syncMsg('B', 'request', time=10))
+        self.assertTrue(ts.timeOK(10))
+        ts.processSyncMsg(syncMsg('A', 'request', time=5))
+        self.assertEqual(ts.participants['A'], 5)
+        self.assertEqual(ts.participants['B'], 10)
+        self.assertEqual(ts.lbts, 5)
+        self.assertFalse(ts.timeOK(10))
+
+
+class DifferentTimeStepTest(unittest.TestCase):
+    def setUp(self):
+        self.a_step = 3
+        self.b_step = 5
+        self.stop_time = 15
+        self.a = TimeSync('broker', 'registry', 'sync', 'A', logging=False, waitTimeout=3.0)
+        self.b = TimeSync('broker', 'registry', 'sync', 'B', logging=False, waitTimeout=3.0)
+        for ts in (self.a, self.b):
+            ts.processSyncMsg(syncMsg('A', 'join'))
+            ts.processSyncMsg(syncMsg('B', 'join'))
+        lock = Lock()
+
+        def deliver(topic, value):
+            with lock:
+                self.a.processSyncMsg(value)
+                self.b.processSyncMsg(value)
+        self.a.producer.produce = MagicMock(side_effect=deliver)
+        self.b.producer.produce = MagicMock(side_effect=deliver)
+
+    def test_non_divisible_time_steps(self):
+        grants = []
+        def advance(ts, step):
+            while ts.currentLocalTime < self.stop_time:
+                previous_time = ts.currentLocalTime
+                ts.timeAdvance(step)
+                self.assertEqual(ts.currentLocalTime, previous_time + step)
+                grants.append((ts.myID, ts.currentLocalTime))
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            future_a = executor.submit(advance, self.a, self.a_step)
+            future_b = executor.submit(advance, self.b, self.b_step)
+            for future in as_completed([future_a, future_b]):
+                future.result()
+        self.assertEqual(grants[:6], [('A', 3), ('B', 5), ('A', 6), ('A', 9), ('B', 10), ('A', 12)])
+        self.assertCountEqual(grants[6:], [('A', 15), ('B', 15)])
+        self.assertEqual(self.a.lbts, self.stop_time)
+        self.assertEqual(self.b.lbts, self.stop_time)
+
 
 if __name__ == '__main__':
     unittest.main()

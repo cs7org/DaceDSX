@@ -286,6 +286,35 @@ class DifferentTimeStepTest(unittest.TestCase):
         self.assertEqual(self.a.lbts, self.stop_time)
         self.assertEqual(self.b.lbts, self.stop_time)
 
+    def test_negative_steps_rejected_and_zero_steps_allowed(self):
+        grants = []
+        def advance(ts, steps):
+            for step in steps:
+                previous_time = ts.currentLocalTime
+
+                if step < 0:
+                    previous_calls = ts.producer.produce.call_count
+                    with self.assertRaises(ValueError):
+                        ts.timeAdvance(step)
+                    self.assertEqual(ts.currentLocalTime, previous_time)
+                    self.assertEqual(ts.producer.produce.call_count, previous_calls)
+                    continue
+
+                ts.timeAdvance(step)
+                self.assertEqual(ts.currentLocalTime, previous_time + step)
+                grants.append((ts.myID, ts.currentLocalTime))
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            future_a = executor.submit(advance, self.a, [-3, 3, 3, 0, 3, 3, 3])
+            future_b = executor.submit(advance, self.b, [5, 5, 0, -5, 5])
+            for future in as_completed([future_a, future_b]):
+                future.result()
+
+        self.assertEqual(grants[:8], [('A', 3), ('B', 5), ('A', 6), ('A', 6), ('A', 9), ('B', 10), ('B', 10), ('A', 12)])
+        self.assertCountEqual(grants[8:], [('A', 15), ('B', 15)])
+        self.assertEqual(self.a.lbts, self.stop_time)
+        self.assertEqual(self.b.lbts, self.stop_time)
+
 
 if __name__ == '__main__':
     unittest.main()

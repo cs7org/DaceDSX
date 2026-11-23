@@ -219,6 +219,8 @@ class TimeSync():
         print("all expected participants have joined: ", len(self.participants),'/', self.initNoParticipants, flush=True)
     
     def timeAdvance(self, timestep):
+        if timestep < 0:
+            raise ValueError("timestep must not be negative")
         t=self.currentLocalTime + timestep
         started = time.monotonic()
         

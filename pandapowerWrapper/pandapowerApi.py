@@ -28,7 +28,7 @@ from pathlib import Path
 import pandas as pd
 import pandapower as pp
 import json
-# import configparser
+import configparser
 
 # dirty work around
 if __name__ == '__main__':
@@ -39,8 +39,8 @@ if __name__ == '__main__':
     sys.path.append(this_directory+'/../PythonBaseWrapper/src/communication')
 
 
-# config = configparser.ConfigParser()
-# config.read('config.properties')
+config = configparser.ConfigParser()
+config.read('config.properties')
 from MessageBuffer import MessageBuffer, collectPeerMsgs
 from ResultDir import result_dir
 
@@ -569,6 +569,8 @@ class pandapowerAPI(object):
 
         filename = f"powerflow_results_{self.scenarioID}_{self.instanceID}"
         result_dir_path = result_dir(self.scenarioID, self.instanceID)
+
+        exportFileType = config["general"].get("dataframeExportFiletype", "xlsx")
 
         if exportFileType == "xlsx":
             with pd.ExcelWriter(result_dir_path / f"{filename}.xlsx",

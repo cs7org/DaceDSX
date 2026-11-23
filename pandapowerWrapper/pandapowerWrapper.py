@@ -28,7 +28,7 @@ import json
 
 class pandapowerWrapper():
     def __init__(self, scenarioID, instanceID):
-        self.regexTopic = ["^provision\.simulation\." + scenarioID + "\.energy\.Bus"]
+        self.regexTopic = [r"^provision\.simulation\." + scenarioID + r"\.energy\.Bus"]
         self.topicPre = "provision.simulation." + scenarioID + ".energy."
         self.timeTopic = "orchestration.simulation." + scenarioID + ".sync"
         self.scetopic = ['provision.simulation.' + scenarioID + '.scenario']

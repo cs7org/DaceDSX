@@ -1,5 +1,7 @@
 import unittest
 from unittest.mock import MagicMock
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from threading import Lock
 
 import kafka_stub  # noqa: F401  must precede the wrapper imports
 from TimeSync import TimeSync
@@ -44,6 +46,105 @@ class ProcessSyncMsgTest(unittest.TestCase):
         self.assertEqual(timeSync.expectedReceiveCount, {'data.a': 1, 'data.b': 2})
         self.assertEqual(timeSync.lbts, 10)
 
+class MsgCountOKTest(unittest.TestCase):
+
+    def setUp(self):
+        self.ts = TimeSync('broker', 'registry', 'sync', 'me', logging=False)
+        self.ts.max_error_count = 2
+        self.ts.timeoutHandler = MagicMock()
+        self.ts.processSyncMsg(syncMsg('peer', 'join'))
+
+    def announce(self, topic='grid.power', count=3):
+        self.ts.addExpectedTopic(topic)
+        self.ts.processSyncMsg(syncMsg('peer', 'request', time=10, messages={topic: count}))
+
+    def test_missing_messages_triggers_timeout_handler(self):
+        ts = self.ts
+        ts.addExpectedTopic('grid.voltage')
+        self.announce()
+        self.assertEqual(ts.expectedReceiveCount, {'grid.voltage': 0, 'grid.power': 3})
+        self.assertNotIn('grid.power', ts.actualReceivedMsgCount)
+        self.assertFalse(ts.msgCountOK())
+        self.assertEqual(ts.receiveCountErrors['grid.power'], 1)
+        ts.timeoutHandler.assert_not_called()
+        self.assertFalse(ts.msgCountOK())
+        self.assertEqual(ts.receiveCountErrors['grid.power'], 2)
+        ts.timeoutHandler.assert_called_once_with()
+        self.assertNotIn('grid.voltage', ts.receiveCountErrors)
+
+    def test_partial_delivery_triggers_timeout_handler(self):
+        ts = self.ts
+        self.announce()
+        ts.notifiyAboutReceivedMessage('grid.power', count=2)
+        self.assertEqual(ts.actualReceivedMsgCount['grid.power'], 2)
+        self.assertFalse(ts.msgCountOK())
+        self.assertEqual(ts.receiveCountErrors['grid.power'], 1)
+        ts.timeoutHandler.assert_not_called()
+        self.assertFalse(ts.msgCountOK())
+        self.assertEqual(ts.receiveCountErrors['grid.power'], 2)
+        ts.timeoutHandler.assert_called_once_with()
+
+    def test_progress_resets_counter_and_stall_triggers_timeout(self):
+        ts = self.ts
+        self.announce(count=4)
+        self.assertFalse(ts.msgCountOK())
+        self.assertEqual(ts.receiveCountErrors['grid.power'], 1)
+        ts.notifiyAboutReceivedMessage('grid.power')
+        self.assertFalse(ts.msgCountOK())
+        self.assertEqual(ts.receiveCountErrors['grid.power'], 0)
+        ts.notifiyAboutReceivedMessage('grid.power')
+        self.assertFalse(ts.msgCountOK())
+        self.assertEqual(ts.receiveCountErrors['grid.power'], 0)
+        ts.timeoutHandler.assert_not_called()
+        self.assertFalse(ts.msgCountOK())
+        self.assertEqual(ts.receiveCountErrors['grid.power'], 1)
+        ts.timeoutHandler.assert_not_called()
+        self.assertFalse(ts.msgCountOK())
+        self.assertEqual(ts.receiveCountErrors['grid.power'], 2)
+        ts.timeoutHandler.assert_called_once_with()
+
+    def test_complete_delivery_clears_error_state(self):
+        ts = self.ts
+        self.announce()
+        self.assertFalse(ts.msgCountOK())
+        self.assertEqual(ts.receiveCountErrors['grid.power'], 1)
+        ts.notifiyAboutReceivedMessage('grid.power', count=3)
+        self.assertTrue(ts.msgCountOK())
+        self.assertEqual(ts.receiveCountErrors.get('grid.power', 0), 0)
+        ts.timeoutHandler.assert_not_called()
+
+    def test_stall_in_later_step_triggers_timeout_handler(self):
+        ts = self.ts
+        self.announce()
+        ts.notifiyAboutReceivedMessage('grid.power', count=3)
+        self.assertTrue(ts.msgCountOK())
+        ts.processSyncMsg(syncMsg('peer', 'request', time=20, messages={'grid.power': 2}))
+        self.assertFalse(ts.msgCountOK())
+        ts.timeoutHandler.assert_not_called()
+        self.assertFalse(ts.msgCountOK())
+        ts.timeoutHandler.assert_called_once_with()
+
+    def test_multiple_topics_require_complete_delivery(self):
+        ts = self.ts
+        self.announce(topic='grid.power', count=2)
+        self.announce(topic='grid.voltage', count=3)
+        self.assertEqual(ts.expectedReceiveCount, {'grid.power': 2, 'grid.voltage': 3})
+        ts.notifiyAboutReceivedMessage('grid.power', count=2)
+        ts.notifiyAboutReceivedMessage('grid.voltage', count=1)
+        self.assertFalse(ts.msgCountOK())
+        ts.notifiyAboutReceivedMessage('grid.voltage', count=2)
+        self.assertTrue(ts.msgCountOK())
+
+    def test_multiple_participants_accumulate_expected_messages(self):
+        ts = self.ts
+        self.announce(topic='grid.power', count=2)
+        ts.processSyncMsg(syncMsg('peer2', 'join'))
+        ts.processSyncMsg(syncMsg('peer2', 'request', time=10, messages={'grid.power': 3}))
+        self.assertEqual(ts.expectedReceiveCount['grid.power'], 5)
+        ts.notifiyAboutReceivedMessage('grid.power', count=2)
+        self.assertFalse(ts.msgCountOK())
+        ts.notifiyAboutReceivedMessage('grid.power', count=3)
+        self.assertTrue(ts.msgCountOK())
 
 class SafeTimeAdvancementTest(unittest.TestCase):
     def setUp(self):
@@ -133,6 +234,58 @@ class SynchronizationBoundTest(unittest.TestCase):
         ts.processSyncMsg(syncMsg('C', 'leave'))
         self.assertEqual(ts.lbts, 10)
         self.assertTrue(ts.timeOK(10))
+
+    def test_lbts_decreases_on_earlier_request(self):
+        ts = TimeSync('broker', 'registry', 'sync', 'me', logging=False)
+        ts.processSyncMsg(syncMsg('A', 'join'))
+        ts.processSyncMsg(syncMsg('B', 'join'))
+        ts.processSyncMsg(syncMsg('A', 'request', time=10))
+        ts.processSyncMsg(syncMsg('B', 'request', time=10))
+        self.assertTrue(ts.timeOK(10))
+        ts.processSyncMsg(syncMsg('A', 'request', time=5))
+        self.assertEqual(ts.participants['A'], 5)
+        self.assertEqual(ts.participants['B'], 10)
+        self.assertEqual(ts.lbts, 5)
+        self.assertFalse(ts.timeOK(10))
+
+
+class DifferentTimeStepTest(unittest.TestCase):
+    def setUp(self):
+        self.a_step = 3
+        self.b_step = 5
+        self.stop_time = 15
+        self.a = TimeSync('broker', 'registry', 'sync', 'A', logging=False, waitTimeout=3.0)
+        self.b = TimeSync('broker', 'registry', 'sync', 'B', logging=False, waitTimeout=3.0)
+        for ts in (self.a, self.b):
+            ts.processSyncMsg(syncMsg('A', 'join'))
+            ts.processSyncMsg(syncMsg('B', 'join'))
+        lock = Lock()
+
+        def deliver(topic, value):
+            with lock:
+                self.a.processSyncMsg(value)
+                self.b.processSyncMsg(value)
+        self.a.producer.produce = MagicMock(side_effect=deliver)
+        self.b.producer.produce = MagicMock(side_effect=deliver)
+
+    def test_non_divisible_time_steps(self):
+        grants = []
+        def advance(ts, step):
+            while ts.currentLocalTime < self.stop_time:
+                previous_time = ts.currentLocalTime
+                ts.timeAdvance(step)
+                self.assertEqual(ts.currentLocalTime, previous_time + step)
+                grants.append((ts.myID, ts.currentLocalTime))
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            future_a = executor.submit(advance, self.a, self.a_step)
+            future_b = executor.submit(advance, self.b, self.b_step)
+            for future in as_completed([future_a, future_b]):
+                future.result()
+        self.assertEqual(grants[:6], [('A', 3), ('B', 5), ('A', 6), ('A', 9), ('B', 10), ('A', 12)])
+        self.assertCountEqual(grants[6:], [('A', 15), ('B', 15)])
+        self.assertEqual(self.a.lbts, self.stop_time)
+        self.assertEqual(self.b.lbts, self.stop_time)
+
 
 if __name__ == '__main__':
     unittest.main()

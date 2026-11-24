@@ -131,7 +131,7 @@ public class ScenarioInstanceExecutor extends Thread{
 
 	public HashMap<String, ExecutorThread> executeInstances(Scenario scenario, boolean debug) {
 		logger.info("Running scenario " + scenario.getScenarioID());
-		logger.info("No. of trafficsims: " + scenario.getBuildingBlocks().size());
+		logger.info("#Simulations: " + scenario.getBuildingBlocks().size());
 		
 		HashMap<String, ExecutorThread> threads= new HashMap<String,ExecutorThread>();
 

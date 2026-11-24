@@ -1,5 +1,5 @@
-rootDir=<repo-dir>/DaceDs4energy_clean/_data
-logDir=<repo-dir>/DaceDs4energy_clean/_data/log
+rootDir=<repo-dir>/_data
+logDir=<repo-dir>/_data/log
 simulatorLogFile=sumo.log
 simulatorErrorLogFile=sumo_error.log
 

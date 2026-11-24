@@ -20,6 +20,7 @@ import java.util.Date;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.lang.Integer;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -161,6 +162,7 @@ public class SimulationService
 									}
 									logger.info("Received new request: " + scenario.toString());
 									int errorAdding = ScenarioManager.addScenarioRun(scenario, record.timestamp());
+									logger.info("return code of addScenarioRun(): " + Integer.toString(errorAdding));
 
 									if(errorAdding == 0) {
 										publishStatus("Successfully added "+scenario.getScenarioID()+" to pool!");										
@@ -173,9 +175,8 @@ public class SimulationService
 										publishStatus("Requested scenario id "+scenario.getScenarioID()+" is already known, ignoring!");										
 									}
 									
-									if(exitOnFailure && errorAdding > 0) {
+									if(isAddRejected(errorAdding)) {
 										publishStatus("Failed to add "+scenario.getScenarioID()+" to pool!");
-										MAINLOOP_STOPPED.set(true);
 									}
 								}
 							}
@@ -233,6 +234,11 @@ public class SimulationService
 		return thread;
 	}
 
+	// ScenarioManager.addScenarioRun: 1 (too old) and 2 (id known) are informational, only 3 (instantiation failed) is a rejection
+	static boolean isAddRejected(int errorAdding) {
+		return errorAdding == 3;
+	}
+
 	public static void monitorChanges() {
 		
 		ArrayList<String> ended = ScenarioManager.cleanTerminatedScenarios();
@@ -258,6 +264,10 @@ public class SimulationService
 		String ddir = Config.get(Config.DIR_DEFINITION);
 		File dir = new File(ddir+dirs);
 		System.out.println("definitionDirectory: "+dir);
+		if(!dir.isDirectory()) {
+			logger.error("Definition directory "+dir+" does not exist, exiting...");
+			System.exit(1);
+		}
 
 		String config = "";
 		try {
@@ -295,6 +305,10 @@ public class SimulationService
 		//single msg for  each resource
 		String ddir = Config.get(Config.DIR_DEFINITION);
 		File dir = new File(ddir+"/resources");
+		if(!dir.isDirectory()) {
+			logger.error("Resource directory "+dir+" does not exist, exiting...");
+			System.exit(1);
+		}
 		
 		String config = "";
 		try {

@@ -20,6 +20,7 @@ import java.util.Date;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.lang.Integer;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -161,6 +162,7 @@ public class SimulationService
 									}
 									logger.info("Received new request: " + scenario.toString());
 									int errorAdding = ScenarioManager.addScenarioRun(scenario, record.timestamp());
+									logger.info("return code of addScenarioRun(): " + Integer.toString(errorAdding));
 
 									if(errorAdding == 0) {
 										publishStatus("Successfully added "+scenario.getScenarioID()+" to pool!");										

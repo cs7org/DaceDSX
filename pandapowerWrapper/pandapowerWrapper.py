@@ -73,6 +73,7 @@ class pandapowerWrapper():
             msg = consumer.poll(1.0)
             if msg is None or msg.error():
                 continue
+            # self.klog(f"Received {msg}")
             scenario = msg.value()
             self.sce = scenario
             for block in self.sce['buildingBlocks']:

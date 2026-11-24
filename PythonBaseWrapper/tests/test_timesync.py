@@ -47,7 +47,6 @@ class ProcessSyncMsgTest(unittest.TestCase):
         self.assertEqual(timeSync.lbts, 10)
 
 class MsgCountOKTest(unittest.TestCase):
-
     def setUp(self):
         self.ts = TimeSync('broker', 'registry', 'sync', 'me', logging=False)
         self.ts.max_error_count = 2
@@ -146,6 +145,15 @@ class MsgCountOKTest(unittest.TestCase):
         ts.notifiyAboutReceivedMessage('grid.power', count=3)
         self.assertTrue(ts.msgCountOK())
 
+    def test_earlier_request_does_not_increase_expected_messages(self):
+        ts = self.ts
+        self.announce()
+        ts.processSyncMsg(syncMsg('peer', 'request', time=5, messages={'grid.power': 2}))
+        self.assertEqual(ts.expectedReceiveCount['grid.power'], 3)
+        ts.processSyncMsg(syncMsg('peer', 'request', time=10, messages={'grid.power': 1}))
+        self.assertEqual(ts.expectedReceiveCount['grid.power'], 4)
+
+
 class SafeTimeAdvancementTest(unittest.TestCase):
     def setUp(self):
         self.ts = TimeSync('broker', 'registry', 'sync', 'me', initNoParticipants=2, logging=False, waitTimeout=1.0)
@@ -235,7 +243,7 @@ class SynchronizationBoundTest(unittest.TestCase):
         self.assertEqual(ts.lbts, 10)
         self.assertTrue(ts.timeOK(10))
 
-    def test_lbts_decreases_on_earlier_request(self):
+    def test_lbts_unchanged_on_earlier_request(self):
         ts = TimeSync('broker', 'registry', 'sync', 'me', logging=False)
         ts.processSyncMsg(syncMsg('A', 'join'))
         ts.processSyncMsg(syncMsg('B', 'join'))
@@ -243,10 +251,10 @@ class SynchronizationBoundTest(unittest.TestCase):
         ts.processSyncMsg(syncMsg('B', 'request', time=10))
         self.assertTrue(ts.timeOK(10))
         ts.processSyncMsg(syncMsg('A', 'request', time=5))
-        self.assertEqual(ts.participants['A'], 5)
+        self.assertEqual(ts.participants['A'], 10)
         self.assertEqual(ts.participants['B'], 10)
-        self.assertEqual(ts.lbts, 5)
-        self.assertFalse(ts.timeOK(10))
+        self.assertEqual(ts.lbts, 10)
+        self.assertTrue(ts.timeOK(10))
 
 
 class DifferentTimeStepTest(unittest.TestCase):

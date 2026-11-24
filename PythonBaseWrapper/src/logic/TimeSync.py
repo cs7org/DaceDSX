@@ -88,8 +88,11 @@ class TimeSync():
         elif (msg['Action'] == 'leave' and (sender in self.participants)):
             self.participants.pop(sender)
         elif (msg['Action'] == 'request' and (sender in self.participants)):
+            if msg['Time'] < self.participants[sender]:
+                print("ignoring request from", sender, "with earlier time:", msg['Time'], "<", self.participants[sender], flush=True)
+                return
             self.participants[sender] = msg['Time']
-            
+
             for topic in msg['Messages']:
                 if(self.logging == True):
                     print("a message was announced on ",topic, flush=True)

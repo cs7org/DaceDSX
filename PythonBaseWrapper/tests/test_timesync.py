@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from threading import Lock
 
@@ -286,6 +286,66 @@ class DifferentTimeStepTest(unittest.TestCase):
         self.assertEqual(self.a.lbts, self.stop_time)
         self.assertEqual(self.b.lbts, self.stop_time)
 
+
+class SynchronizationParticipationTest(unittest.TestCase):
+    def test_join_timing_waits_for_required_participants(self):
+        ts = TimeSync('broker', 'registry', 'sync', 'me', initNoParticipants=2, logging=False, waitTimeout=1.0)
+        messages = [syncMsg('me', 'join'), syncMsg('me', 'join', time=10), syncMsg('X', 'join')]
+        incoming = []
+        for msg in messages:
+            record = MagicMock()
+            record.value.return_value = msg
+            incoming.append(record)
+        ts.producer.produce = MagicMock()
+        ts.consumer.poll = MagicMock(side_effect=incoming)
+        ts.joinTiming()
+        ts.producer.produce.assert_called_once_with(topic='sync', value=syncMsg('me', 'join'))
+        self.assertEqual(ts.consumer.poll.call_count, 3)
+        self.assertEqual(ts.participants, {'me': 0, 'X': 0})
+        self.assertEqual(ts.lbts, 0)
+
+    def test_join_timing_times_out_when_participant_missing(self):
+        ts = TimeSync('broker', 'registry', 'sync', 'me', initNoParticipants=2, logging=False, waitTimeout=1.0)
+        ts.processSyncMsg(syncMsg('me', 'join'))
+        ts.producer.produce = MagicMock()
+        ts.consumer.poll = MagicMock(return_value=None)
+        with patch('TimeSync.time.monotonic', side_effect=[0.0, 1.0]):
+            with self.assertRaisesRegex(TimeoutError, "participants to join"):
+                ts.joinTiming()
+        ts.producer.produce.assert_called_once_with(topic='sync', value=syncMsg('me', 'join'))
+        self.assertEqual(ts.participants, {'me': 0})
+
+    def test_only_registered_participants_can_update_sync_time(self):
+        ts = TimeSync('broker', 'registry', 'sync', 'me', logging=False)
+        ts.addExpectedTopic('grid.power')
+        ts.processSyncMsg(syncMsg('A', 'join'))
+        ts.processSyncMsg(syncMsg('A', 'request', time=10))
+        ts.processSyncMsg(syncMsg('B', 'request', time=20, messages={'grid.power': 3}))
+        self.assertEqual(ts.participants, {'A': 10})
+        self.assertEqual(ts.lbts, 10)
+        self.assertEqual(ts.expectedReceiveCount['grid.power'], 0)
+
+    def test_leave_timing_announces_departure(self):
+        ts = TimeSync('broker', 'registry', 'sync', 'me', logging=False)
+        ts.producer.produce = MagicMock()
+        ts.leaveTiming()
+        ts.producer.produce.assert_called_once_with(topic='sync', value=syncMsg('me', 'leave', time=-1))
+
+    def test_late_joining_participant_reduces_lbts(self):
+        ts = TimeSync('broker', 'registry', 'sync', 'A', initNoParticipants=2, logging=False, waitTimeout=1.0)
+        ts.processSyncMsg(syncMsg('A', 'join'))
+        ts.processSyncMsg(syncMsg('B', 'join'))
+        ts.processSyncMsg(syncMsg('A', 'request', time=20))
+        ts.processSyncMsg(syncMsg('B', 'request', time=20))
+        ts.producer.produce = MagicMock()
+        ts.timeAdvance(20)
+        self.assertEqual(ts.currentLocalTime, 20)
+        self.assertEqual(ts.lbts, 20)
+        ts.processSyncMsg(syncMsg('C', 'join'))
+        self.assertEqual(ts.participants, {'A': 20, 'B': 20, 'C': 0})
+        self.assertEqual(ts.lbts, 0)
+        self.assertEqual(ts.currentLocalTime, 20)
+        self.assertFalse(ts.timeOK(20))
 
 if __name__ == '__main__':
     unittest.main()
